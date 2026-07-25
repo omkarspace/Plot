@@ -18,11 +18,15 @@ export const formatDaysHours = (minutes: number): string => {
 
 export const calculateBingeTime = (
   totalEpisodes: number,
-  episodeRuntime: number,
+  episodeRuntimeMinutes: number,
   episodesPerDay: number = 2
 ): { hours: number; days: number } => {
-  const totalMinutes = totalEpisodes * episodeRuntime;
+  if (totalEpisodes === 0 || episodeRuntimeMinutes === 0) {
+    return { hours: 0, days: 0 };
+  }
+  const totalMinutes = totalEpisodes * episodeRuntimeMinutes;
   const hours = Math.round((totalMinutes / 60) * 10) / 10;
-  const days = Math.round((totalMinutes / (episodesPerDay * episodeRuntime * 60)) * 10) / 10;
+  const totalDays = totalEpisodes / episodesPerDay;
+  const days = Math.round(totalDays * 10) / 10;
   return { hours, days };
 };

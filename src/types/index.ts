@@ -85,6 +85,14 @@ export interface TMDBWatchProviders {
   };
 }
 
+export interface SeasonDetail {
+  seasonNumber: number;
+  name: string;
+  episodeCount: number;
+  airDate: string;
+  posterPath: string | null;
+}
+
 export interface ShowDetail {
   id: number;
   type: "tv" | "movie";
@@ -101,6 +109,7 @@ export interface ShowDetail {
   genres: string[];
   streamingProviders: StreamingProvider[];
   bingeStats: BingeStats;
+  seasonDetails?: SeasonDetail[];
 }
 
 export interface StreamingProvider {
@@ -121,4 +130,21 @@ export interface WatchlistItem {
   posterPath: string | null;
   totalRuntimeMinutes: number;
   addedAt: number;
+}
+
+export interface WatchedItem {
+  id: number;
+  type: "tv" | "movie";
+  title: string;
+  posterPath: string | null;
+  totalRuntimeMinutes: number;
+  watchedAt: number;
+}
+
+export interface SearchHistoryItem {
+  id: number;
+  type: "tv" | "movie";
+  title: string;
+  posterPath: string | null;
+  timestamp: number;
 }

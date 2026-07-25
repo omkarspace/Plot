@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { searchShows, getImageUrl } from "@/lib/tmdb";
-import type { TMDBSearchResult } from "@/types";
+import type { TMDBSearchResult, SearchHistoryItem } from "@/types";
+import {
+  getSearchHistory,
+  addToSearchHistory,
+  clearSearchHistory,
+} from "@/lib/localStorage";
 
 interface SearchBarProps {
   onSelect: (result: TMDBSearchResult) => void;
@@ -14,6 +19,8 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [history, setHistory] = useState<SearchHistoryItem[]>(() => getSearchHistory());
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -83,6 +90,13 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
   };
 
   const handleSelect = (result: TMDBSearchResult) => {
+    addToSearchHistory({
+      id: result.id,
+      type: result.media_type as "tv" | "movie",
+      title: result.title || result.name || "Unknown",
+      posterPath: result.poster_path,
+    });
+    setHistory(getSearchHistory());
     onSelect(result);
     setQuery("");
     setResults([]);
@@ -95,6 +109,27 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
     return date ? new Date(date).getFullYear() : "";
   };
 
+  const handleFocus = () => {
+    setIsFocused(true);
+    if (results.length > 0) setIsOpen(true);
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => setIsFocused(false), 150);
+  };
+
+  const handleHistorySelect = (title: string) => {
+    handleSearch(title);
+    inputRef.current?.focus();
+  };
+
+  const handleClearHistory = () => {
+    clearSearchHistory();
+    setHistory([]);
+  };
+
+  const showHistory = isFocused && query.trim().length === 0 && history.length > 0;
+
   return (
     <div ref={dropdownRef} className="relative w-full max-w-2xl mx-auto">
       <div className="relative">
@@ -104,7 +139,8 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => results.length > 0 && setIsOpen(true)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder="Search for a TV show or movie..."
           className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#262626] rounded-xl text-white placeholder-[#737373] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all text-lg"
         />
@@ -114,6 +150,39 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
           </div>
         )}
       </div>
+
+      {showHistory && (
+        <div className="absolute z-50 w-full mt-2 bg-[#1a1a1a] border border-[#262626] rounded-xl p-3 shadow-2xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs text-[#525252] uppercase tracking-wider">Recent</span>
+            <div className="flex-1" />
+            <button
+              onClick={handleClearHistory}
+              className="text-xs text-[#525252] hover:text-[#737373] transition-colors"
+            >
+              Clear history
+            </button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {history.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleHistorySelect(item.title)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a1a] rounded-full border border-[#262626] hover:border-[#3b82f6]/50 transition-colors shrink-0"
+              >
+                <img
+                  src={getImageUrl(item.posterPath, "w45")}
+                  alt={item.title}
+                  className="w-6 h-6 rounded-full object-cover"
+                />
+                <span className="text-sm text-[#a3a3a3] truncate max-w-[150px]">
+                  {item.title}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isOpen && results.length > 0 && (
         <div className="absolute z-50 w-full mt-2 bg-[#1a1a1a] border border-[#262626] rounded-xl overflow-hidden shadow-2xl">

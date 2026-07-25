@@ -2,17 +2,26 @@
 
 import { useState } from "react";
 import { getImageUrl } from "@/lib/tmdb";
-import { formatRuntime, formatDaysHours } from "@/lib/time";
+import { formatRuntime, formatDaysHours, calculateBingeTime } from "@/lib/time";
 import type { ShowDetail as ShowDetailType } from "@/types";
 
 interface ShowDetailProps {
   show: ShowDetailType;
   isInWatchlist: boolean;
+  isWatched: boolean;
   onAdd: (show: ShowDetailType) => void;
+  onToggleWatched: (show: ShowDetailType) => void;
 }
 
-export default function ShowDetail({ show, isInWatchlist, onAdd }: ShowDetailProps) {
+export default function ShowDetail({ show, isInWatchlist, isWatched, onAdd, onToggleWatched }: ShowDetailProps) {
   const [added, setAdded] = useState(false);
+  const [showSeasons, setShowSeasons] = useState(false);
+  const [episodesPerDay, setEpisodesPerDay] = useState(2);
+
+  const bingeTime =
+    show.type === "tv" && show.episodes && show.episodeRuntime
+      ? calculateBingeTime(show.episodes, show.episodeRuntime, episodesPerDay)
+      : null;
 
   const handleAdd = () => {
     onAdd(show);
@@ -67,10 +76,26 @@ export default function ShowDetail({ show, isInWatchlist, onAdd }: ShowDetailPro
                 <p className="text-[#737373] text-xs uppercase tracking-wide">Total</p>
                 <p className="text-white font-semibold">{formatDaysHours(show.totalRuntimeMinutes)}</p>
               </div>
-              {show.type === "tv" && (
-                <div className="bg-[#0f0f0f] rounded-lg p-3">
-                  <p className="text-[#737373] text-xs uppercase tracking-wide">Binge (2/day)</p>
-                  <p className="text-white font-semibold">{show.bingeStats.totalDays} days</p>
+              {show.type === "tv" && bingeTime && (
+                <div className="bg-[#0f0f0f] rounded-lg p-3 col-span-2 md:col-span-3">
+                  <p className="text-[#737373] text-xs uppercase tracking-wide mb-2">
+                    Binge Speed
+                  </p>
+                  <p className="text-white font-semibold text-sm mb-3">
+                    {episodesPerDay} ep/day — {bingeTime.days} days ({bingeTime.hours}h total)
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#737373] text-xs whitespace-nowrap">1 ep/day</span>
+                    <input
+                      type="range"
+                      min={1}
+                      max={10}
+                      value={episodesPerDay}
+                      onChange={(e) => setEpisodesPerDay(Number(e.target.value))}
+                      className="flex-1 h-1.5 bg-[#262626] rounded-full appearance-none cursor-pointer accent-[#3b82f6]"
+                    />
+                    <span className="text-[#737373] text-xs whitespace-nowrap">10 ep/day</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -104,23 +129,76 @@ export default function ShowDetail({ show, isInWatchlist, onAdd }: ShowDetailPro
               </div>
             )}
 
+            {show.type === "tv" && show.seasonDetails && show.seasonDetails.length > 0 && (
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowSeasons(!showSeasons)}
+                  className="text-[#737373] text-xs uppercase tracking-wide hover:text-white transition-colors"
+                >
+                  {showSeasons ? "Hide Season Breakdown" : "Show Season Breakdown"} {showSeasons ? "▲" : "▼"}
+                </button>
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{ maxHeight: showSeasons ? `${show.seasonDetails.length * 48 + 16}px` : "0" }}
+                >
+                  <div className="mt-3 bg-[#0f0f0f] rounded-xl overflow-hidden">
+                    <div className="hidden md:grid grid-cols-[80px_1fr_100px_80px] gap-2 px-4 py-2 border-b border-[#262626]">
+                      <span className="text-[#737373] text-xs uppercase">Season</span>
+                      <span className="text-[#737373] text-xs uppercase">Name</span>
+                      <span className="text-[#737373] text-xs uppercase">Episodes</span>
+                      <span className="text-[#737373] text-xs uppercase">Year</span>
+                    </div>
+                    {show.seasonDetails.map((season, i) => (
+                      <div
+                        key={season.seasonNumber}
+                        className={`grid md:grid-cols-[80px_1fr_100px_80px] grid-cols-[60px_1fr_80px] gap-2 px-4 py-2.5 ${
+                          i % 2 === 0 ? "bg-[#0f0f0f]" : "bg-[#1a1a1a]"
+                        } ${i !== show.seasonDetails!.length - 1 ? "border-b border-[#262626]" : ""}`}
+                      >
+                        <span className="text-white text-sm font-medium">
+                          <span className="md:hidden">S</span>{season.seasonNumber}
+                        </span>
+                        <span className="text-white text-sm truncate">{season.name}</span>
+                        <span className="text-[#a3a3a3] text-sm">{season.episodeCount} eps</span>
+                        <span className="hidden md:inline text-[#737373] text-sm">
+                          {season.airDate ? season.airDate.split("-")[0] : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {show.overview && (
               <p className="text-[#a3a3a3] text-sm leading-relaxed mb-4 line-clamp-3">
                 {show.overview}
               </p>
             )}
 
-            <button
-              onClick={handleAdd}
-              disabled={isInWatchlist}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                isInWatchlist || added
-                  ? "bg-green-500/20 text-green-400 cursor-default"
-                  : "bg-[#3b82f6] hover:bg-[#2563eb] text-white"
-              }`}
-            >
-              {isInWatchlist || added ? "✓ In Watchlist" : "+ Add to Watchlist"}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleAdd}
+                disabled={isInWatchlist}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                  isInWatchlist || added
+                    ? "bg-green-500/20 text-green-400 cursor-default"
+                    : "bg-[#3b82f6] hover:bg-[#2563eb] text-white"
+                }`}
+              >
+                {isInWatchlist || added ? "✓ In Watchlist" : "+ Add to Watchlist"}
+              </button>
+              <button
+                onClick={() => onToggleWatched(show)}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                  isWatched
+                    ? "bg-green-500/20 text-green-400 cursor-default"
+                    : "border border-[#404040] text-[#a3a3a3] hover:border-green-500/50 hover:text-green-400"
+                }`}
+              >
+                {isWatched ? "✓ Watched" : "Mark as Watched"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

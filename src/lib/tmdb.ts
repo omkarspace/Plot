@@ -4,6 +4,7 @@ import type {
   TMDBMovieDetail,
   TMDBWatchProviders,
   ShowDetail,
+  SeasonDetail,
   StreamingProvider,
 } from "@/types";
 
@@ -111,6 +112,16 @@ export const buildShowDetail = async (
     const totalHours = totalRuntimeMinutes / 60;
     const totalDays = totalHours / 24;
 
+    const seasonDetails: SeasonDetail[] = detail.seasons
+      .filter((s) => s.season_number > 0)
+      .map((s) => ({
+        seasonNumber: s.season_number,
+        name: s.name,
+        episodeCount: s.episode_count,
+        airDate: s.air_date,
+        posterPath: s.poster_path,
+      }));
+
     return {
       id: detail.id,
       type: "tv",
@@ -131,6 +142,7 @@ export const buildShowDetail = async (
         totalDays: Math.round(totalDays * 10) / 10,
         episodesPerDay: 2,
       },
+      seasonDetails,
     };
   } else {
     const detail = await getMovieDetail(result.id);

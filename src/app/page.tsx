@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import SearchBar from "@/components/SearchBar";
 import ShowDetail from "@/components/ShowDetail";
 import Watchlist from "@/components/Watchlist";
+import WatchedSection from "@/components/WatchedSection";
 import StatsBar from "@/components/StatsBar";
 import { buildShowDetail } from "@/lib/tmdb";
-import { getWatchlist, addToWatchlist, removeFromWatchlist, isInWatchlist } from "@/lib/localStorage";
-import type { TMDBSearchResult, ShowDetail as ShowDetailType, WatchlistItem } from "@/types";
+import {
+  getWatchlist, addToWatchlist, removeFromWatchlist, isInWatchlist,
+  getWatched, addToWatched, removeFromWatched, isWatched,
+} from "@/lib/localStorage";
+import type { TMDBSearchResult, ShowDetail as ShowDetailType, WatchlistItem, WatchedItem } from "@/types";
 
 export default function Home() {
   const [selectedShow, setSelectedShow] = useState<ShowDetailType | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => getWatchlist());
+  const [watched, setWatched] = useState<WatchedItem[]>(() => getWatched());
   const [detailError, setDetailError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setWatchlist(getWatchlist());
-  }, []);
 
   const handleSearchSelect = async (result: TMDBSearchResult) => {
     setIsLoadingDetail(true);
@@ -48,6 +49,28 @@ export default function Home() {
   const handleRemoveFromWatchlist = (id: number) => {
     removeFromWatchlist(id);
     setWatchlist(getWatchlist());
+  };
+
+  const handleToggleWatched = (show: ShowDetailType) => {
+    if (isWatched(show.id)) {
+      removeFromWatched(show.id);
+    } else {
+      const item: WatchedItem = {
+        id: show.id,
+        type: show.type,
+        title: show.title,
+        posterPath: show.posterPath,
+        totalRuntimeMinutes: show.totalRuntimeMinutes,
+        watchedAt: Date.now(),
+      };
+      addToWatched(item);
+    }
+    setWatched(getWatched());
+  };
+
+  const handleRemoveFromWatched = (id: number) => {
+    removeFromWatched(id);
+    setWatched(getWatched());
   };
 
   const totalMinutes = watchlist.reduce((sum, item) => sum + item.totalRuntimeMinutes, 0);
@@ -86,7 +109,9 @@ export default function Home() {
             <ShowDetail
               show={selectedShow}
               isInWatchlist={isInWatchlist(selectedShow.id)}
+              isWatched={isWatched(selectedShow.id)}
               onAdd={handleAddToWatchlist}
+              onToggleWatched={handleToggleWatched}
             />
           </div>
         )}
@@ -95,6 +120,13 @@ export default function Home() {
           <StatsBar totalMinutes={totalMinutes} count={watchlist.length} />
           <Watchlist items={watchlist} onRemove={handleRemoveFromWatchlist} />
         </div>
+
+        {watched.length > 0 && (
+          <>
+            <div className="border-t border-[#262626] my-10" />
+            <WatchedSection items={watched} onRemove={handleRemoveFromWatched} />
+          </>
+        )}
       </div>
     </main>
   );
