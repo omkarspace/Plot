@@ -1,4 +1,4 @@
-import type { WatchlistItem, WatchedItem, SearchHistoryItem } from "@/types";
+import type { WatchlistItem, WatchedItem, SearchHistoryItem, ShowProgress } from "@/types";
 
 const STORAGE_KEY = "plot-watchlist";
 const WATCHED_KEY = "plot-watched";
@@ -79,4 +79,56 @@ export const addToSearchHistory = (item: Omit<SearchHistoryItem, "timestamp">): 
 
 export const clearSearchHistory = (): void => {
   localStorage.removeItem(HISTORY_KEY);
+};
+
+// === Progress Tracking ===
+
+const PROGRESS_KEY = "plot-progress";
+
+export const getProgress = (): ShowProgress[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const data = localStorage.getItem(PROGRESS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const getProgressForShow = (id: number): ShowProgress | undefined => {
+  return getProgress().find((p) => p.id === id);
+};
+
+export const updateProgress = (progress: ShowProgress): void => {
+  const all = getProgress().filter((p) => p.id !== progress.id);
+  all.push(progress);
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(all));
+};
+
+export const removeProgress = (id: number): void => {
+  const all = getProgress().filter((p) => p.id !== id);
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(all));
+};
+
+// === User Services ===
+
+const SERVICES_KEY = "plot-services";
+
+export const getUserServices = (): string[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SERVICES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return parsed.services || [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveUserServices = (serviceIds: string[]): void => {
+  localStorage.setItem(
+    SERVICES_KEY,
+    JSON.stringify({ services: serviceIds, updatedAt: Date.now() })
+  );
 };
