@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Plot — Track Your Watch Time",
-  description: "Search TV shows and movies, see stats, build your watchlist",
+  title: "Plot — Stop Scrolling. Start Watching.",
+  description: "The smartest way to pick what to watch. Filter by time, streaming service, and mood.",
 };
 
 export default function RootLayout({

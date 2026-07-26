@@ -2,23 +2,31 @@
 
 import { useState } from "react";
 import SearchBar from "@/components/SearchBar";
+import SmartFilter from "@/components/SmartFilter";
+import FilteredResults from "@/components/FilteredResults";
 import ShowDetail from "@/components/ShowDetail";
 import Watchlist from "@/components/Watchlist";
 import WatchedSection from "@/components/WatchedSection";
 import StatsBar from "@/components/StatsBar";
+import EmptyState from "@/components/EmptyState";
 import { buildShowDetail } from "@/lib/tmdb";
-import {
-  getWatchlist, addToWatchlist, removeFromWatchlist, isInWatchlist,
-  getWatched, addToWatched, removeFromWatched, isWatched,
-} from "@/lib/localStorage";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useProgress } from "@/hooks/useProgress";
+import { useSmartFilter } from "@/hooks/useSmartFilter";
 import type { TMDBSearchResult, ShowDetail as ShowDetailType, WatchlistItem, WatchedItem } from "@/types";
+import {
+  getWatched, addToWatched, removeFromWatched, isWatched as checkIsWatched,
+} from "@/lib/localStorage";
 
 export default function Home() {
   const [selectedShow, setSelectedShow] = useState<ShowDetailType | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => getWatchlist());
-  const [watched, setWatched] = useState<WatchedItem[]>(() => getWatched());
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [, forceUpdate] = useState(0);
+
+  const watchlist = useWatchlist();
+  const progress = useProgress();
+  const smartFilter = useSmartFilter();
 
   const handleSearchSelect = async (result: TMDBSearchResult) => {
     setIsLoadingDetail(true);
@@ -42,17 +50,15 @@ export default function Home() {
       totalRuntimeMinutes: show.totalRuntimeMinutes,
       addedAt: Date.now(),
     };
-    addToWatchlist(item);
-    setWatchlist(getWatchlist());
+    watchlist.add(item);
   };
 
   const handleRemoveFromWatchlist = (id: number) => {
-    removeFromWatchlist(id);
-    setWatchlist(getWatchlist());
+    watchlist.remove(id);
   };
 
   const handleToggleWatched = (show: ShowDetailType) => {
-    if (isWatched(show.id)) {
+    if (checkIsWatched(show.id)) {
       removeFromWatched(show.id);
     } else {
       const item: WatchedItem = {
@@ -65,27 +71,70 @@ export default function Home() {
       };
       addToWatched(item);
     }
-    setWatched(getWatched());
+    forceUpdate((n) => n + 1);
   };
 
-  const handleRemoveFromWatched = (id: number) => {
-    removeFromWatched(id);
-    setWatched(getWatched());
+  const handleAdvanceEpisode = () => {
+    if (selectedShow) {
+      progress.advanceEpisode(selectedShow.id);
+    }
   };
 
-  const totalMinutes = watchlist.reduce((sum, item) => sum + item.totalRuntimeMinutes, 0);
+  const handleResetProgress = () => {
+    if (selectedShow) {
+      progress.remove(selectedShow.id);
+    }
+  };
+
+  const handleFilterSelect = (id: number) => {
+    const item = watchlist.items.find((w) => w.id === id);
+    if (item) {
+      const tmdbResult: TMDBSearchResult = {
+        id: item.id,
+        media_type: item.type,
+        name: item.title,
+        poster_path: item.posterPath,
+        backdrop_path: null,
+        overview: "",
+        vote_average: 0,
+        genre_ids: [],
+      };
+      handleSearchSelect(tmdbResult);
+    }
+  };
 
   return (
     <main className="min-h-screen px-4 py-8 md:py-12">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            Plot
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-2">Plot</h1>
           <p className="text-[#737373]">
-            Track your watch time. Never wonder &ldquo;how long is this again?&rdquo;
+            Stop scrolling. Start watching.
           </p>
         </div>
+
+        <SmartFilter
+          timeBudget={smartFilter.criteria.timeBudget}
+          selectedServices={smartFilter.criteria.services}
+          selectedGenres={smartFilter.criteria.genres}
+          isFilterActive={smartFilter.isFilterActive}
+          onTimeBudgetChange={smartFilter.setTimeBudget}
+          onServiceToggle={smartFilter.toggleService}
+          onGenreToggle={smartFilter.toggleGenre}
+          onReset={smartFilter.resetFilter}
+          resultCount={smartFilter.results.length}
+        />
+
+        {smartFilter.isFilterActive && (
+          <div className="mb-10">
+            <h3 className="text-lg font-semibold text-white mb-4">Your matches</h3>
+            <FilteredResults
+              results={smartFilter.results}
+              onSelect={handleFilterSelect}
+              onAddToWatchlist={() => {}}
+            />
+          </div>
+        )}
 
         <div className="mb-8">
           <SearchBar onSelect={handleSearchSelect} />
@@ -108,25 +157,35 @@ export default function Home() {
           <div className="mb-10">
             <ShowDetail
               show={selectedShow}
-              isInWatchlist={isInWatchlist(selectedShow.id)}
-              isWatched={isWatched(selectedShow.id)}
+              isInWatchlist={watchlist.isInList(selectedShow.id)}
+              isWatched={checkIsWatched(selectedShow.id)}
               onAdd={handleAddToWatchlist}
               onToggleWatched={handleToggleWatched}
+              progress={progress.getForShow(selectedShow.id)}
+              onAdvanceEpisode={handleAdvanceEpisode}
+              onResetProgress={handleResetProgress}
             />
           </div>
         )}
 
         <div className="mt-10">
-          <StatsBar totalMinutes={totalMinutes} count={watchlist.length} />
-          <Watchlist items={watchlist} onRemove={handleRemoveFromWatchlist} />
+          <StatsBar totalMinutes={watchlist.totalMinutes} count={watchlist.items.length} />
+          {watchlist.items.length > 0 ? (
+            <Watchlist items={watchlist.items} onRemove={handleRemoveFromWatchlist} />
+          ) : (
+            <EmptyState type="watchlist" />
+          )}
         </div>
 
-        {watched.length > 0 && (
-          <>
-            <div className="border-t border-[#262626] my-10" />
-            <WatchedSection items={watched} onRemove={handleRemoveFromWatched} />
-          </>
-        )}
+        {(() => {
+          const watchedData = getWatched();
+          return watchedData.length > 0 ? (
+            <>
+              <div className="border-t border-[#262626] my-10" />
+              <WatchedSection items={watchedData} onRemove={(id) => { removeFromWatched(id); forceUpdate((n) => n + 1); }} />
+            </>
+          ) : null;
+        })()}
       </div>
     </main>
   );
