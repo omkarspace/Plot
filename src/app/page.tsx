@@ -1,22 +1,18 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import SearchBar from "@/components/SearchBar";
 import SmartFilter from "@/components/SmartFilter";
 import FilteredResults from "@/components/FilteredResults";
 import ShowDetail from "@/components/ShowDetail";
 import Watchlist from "@/components/Watchlist";
-import WatchedSection from "@/components/WatchedSection";
 import StatsBar from "@/components/StatsBar";
-import EmptyState from "@/components/EmptyState";
 import { buildShowDetail, buildShowDetailById } from "@/lib/tmdb";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useProgress } from "@/hooks/useProgress";
 import { useSmartFilter } from "@/hooks/useSmartFilter";
 import type { TMDBSearchResult, ShowDetail as ShowDetailType, WatchlistItem, WatchedItem } from "@/types";
 import {
-  getWatched as getStoredWatched,
   addToWatched,
   removeFromWatched,
   isWatched as checkIsWatched,
@@ -26,19 +22,10 @@ export default function Home() {
   const [selectedShow, setSelectedShow] = useState<ShowDetailType | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [watchedItems, setWatchedItems] = useState<WatchedItem[]>([]);
 
   const watchlist = useWatchlist();
   const progress = useProgress();
   const smartFilter = useSmartFilter();
-
-  const refreshWatched = useCallback(() => {
-    setWatchedItems(getStoredWatched());
-  }, []);
-
-  useEffect(() => {
-    refreshWatched();
-  }, [refreshWatched]);
 
   const handleSearchSelect = async (result: TMDBSearchResult) => {
     setIsLoadingDetail(true);
@@ -87,7 +74,6 @@ export default function Home() {
       };
       addToWatched(item);
     }
-    refreshWatched();
   };
 
   const handleAdvanceEpisode = () => {
@@ -118,8 +104,8 @@ export default function Home() {
   const resultCount = smartFilter.watchlistResults.length + smartFilter.discoveryResults.length;
 
   return (
-    <main className="min-h-screen px-4 py-8 md:py-12">
-      <div className="max-w-5xl mx-auto">
+    <main className="min-h-screen">
+      <div className="px-4 py-8 md:py-12 max-w-5xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">Plot</h1>
           <p className="text-[#737373]">
@@ -142,6 +128,7 @@ export default function Home() {
           onGenreToggle={smartFilter.toggleGenre}
           onReset={smartFilter.resetFilter}
           resultCount={resultCount}
+          watchlistCount={watchlist.items.length}
         />
 
         {smartFilter.isFilterActive && (
@@ -156,50 +143,42 @@ export default function Home() {
           </div>
         )}
 
-        {isLoadingDetail && (
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-[#737373] mt-4">Loading show details...</p>
-          </div>
-        )}
-
-        {detailError && (
-          <div className="text-center py-12">
-            <p className="text-red-400">{detailError}</p>
-          </div>
-        )}
-
-        {selectedShow && !isLoadingDetail && (
-          <div className="mb-10">
-            <ShowDetail
-              show={selectedShow}
-              isInWatchlist={watchlist.isInList(selectedShow.id)}
-              isWatched={checkIsWatched(selectedShow.id)}
-              onAdd={handleAddToWatchlist}
-              onToggleWatched={handleToggleWatched}
-              progress={progress.getForShow(selectedShow.id)}
-              onAdvanceEpisode={handleAdvanceEpisode}
-              onResetProgress={handleResetProgress}
-            />
-          </div>
-        )}
-
-        <div className="mt-10">
-          <StatsBar totalMinutes={watchlist.totalMinutes} count={watchlist.items.length} />
-          {watchlist.items.length > 0 ? (
+        {watchlist.items.length > 0 && (
+          <div className="mt-10">
+            <StatsBar totalMinutes={watchlist.totalMinutes} count={watchlist.items.length} />
             <Watchlist items={watchlist.items} onRemove={handleRemoveFromWatchlist} />
-          ) : (
-            <EmptyState type="watchlist" />
-          )}
-        </div>
-
-        {watchedItems.length > 0 && (
-          <>
-            <div className="border-t border-[#262626] my-10" />
-            <WatchedSection items={watchedItems} onRemove={(id) => { removeFromWatched(id); refreshWatched(); }} />
-          </>
+          </div>
         )}
       </div>
+
+      {isLoadingDetail && (
+        <div className="text-center py-12">
+          <div className="w-8 h-8 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-[#737373] mt-4">Loading show details...</p>
+        </div>
+      )}
+
+      {detailError && (
+        <div className="text-center py-12">
+          <p className="text-red-400">{detailError}</p>
+        </div>
+      )}
+
+      {selectedShow && !isLoadingDetail && (
+        <div className="w-full px-4 pb-10">
+          <ShowDetail
+            show={selectedShow}
+            isInWatchlist={watchlist.isInList(selectedShow.id)}
+            isWatched={checkIsWatched(selectedShow.id)}
+            onAdd={handleAddToWatchlist}
+            onRemove={handleRemoveFromWatchlist}
+            onToggleWatched={handleToggleWatched}
+            progress={progress.getForShow(selectedShow.id)}
+            onAdvanceEpisode={handleAdvanceEpisode}
+            onResetProgress={handleResetProgress}
+          />
+        </div>
+      )}
     </main>
   );
 }

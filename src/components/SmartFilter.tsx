@@ -12,6 +12,7 @@ interface SmartFilterProps {
   isFilterActive: boolean;
   isLoading: boolean;
   resultCount: number;
+  watchlistCount: number;
   onTimeBudgetChange: (budget: TimeBudget) => void;
   onServiceToggle: (serviceId: string) => void;
   onGenreToggle: (genre: string) => void;
@@ -25,6 +26,7 @@ export default function SmartFilter({
   isFilterActive,
   isLoading,
   resultCount,
+  watchlistCount,
   onTimeBudgetChange,
   onServiceToggle,
   onGenreToggle,
@@ -33,11 +35,18 @@ export default function SmartFilter({
   return (
     <div className="bg-[#1a1a1a] rounded-2xl border border-[#262626] p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-white">What can I watch right now?</h2>
-          <p className="text-[#737373] text-sm">
-            Pick your time, services, and mood — we&apos;ll find the perfect match
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-white">What can I watch right now?</h2>
+            <p className="text-[#737373] text-sm">
+              Pick your time, services, and mood — we&apos;ll find the perfect match
+            </p>
+          </div>
+          {watchlistCount > 0 && (
+            <span className="px-3 py-1 bg-[#3b82f6]/20 text-[#3b82f6] rounded-full text-sm font-medium whitespace-nowrap">
+              {watchlistCount} in watchlist
+            </span>
+          )}
         </div>
         {isFilterActive && (
           <button

@@ -11,6 +11,7 @@ interface ShowDetailProps {
   isInWatchlist: boolean;
   isWatched: boolean;
   onAdd: (show: ShowDetailType) => void;
+  onRemove?: (id: number) => void;
   onToggleWatched: (show: ShowDetailType) => void;
   progress?: ShowProgress;
   onAdvanceEpisode?: () => void;
@@ -22,6 +23,7 @@ export default function ShowDetail({
   isInWatchlist,
   isWatched,
   onAdd,
+  onRemove = () => {},
   onToggleWatched,
   progress,
   onAdvanceEpisode = () => {},
@@ -203,22 +205,31 @@ export default function ShowDetail({
             )}
 
             <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleAdd}
-                disabled={isInWatchlist}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                  isInWatchlist || added
-                    ? "bg-green-500/20 text-green-400 cursor-default"
-                    : "bg-[#3b82f6] hover:bg-[#2563eb] text-white"
-                }`}
-              >
-                {isInWatchlist || added ? "✓ In Watchlist" : "+ Add to Watchlist"}
-              </button>
+              {isInWatchlist ? (
+                <button
+                  onClick={() => onRemove(show.id)}
+                  className="px-6 py-3 rounded-xl font-semibold transition-all bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                >
+                  Remove from Watchlist
+                </button>
+              ) : (
+                <button
+                  onClick={handleAdd}
+                  disabled={added}
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                    added
+                      ? "bg-green-500/20 text-green-400 cursor-default"
+                      : "bg-[#3b82f6] hover:bg-[#2563eb] text-white"
+                  }`}
+                >
+                  {added ? "✓ Added" : "+ Add to Watchlist"}
+                </button>
+              )}
               <button
                 onClick={() => onToggleWatched(show)}
                 className={`px-6 py-3 rounded-xl font-semibold transition-all ${
                   isWatched
-                    ? "bg-green-500/20 text-green-400 cursor-default"
+                    ? "bg-green-500 text-white"
                     : "border border-[#404040] text-[#a3a3a3] hover:border-green-500/50 hover:text-green-400"
                 }`}
               >
