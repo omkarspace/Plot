@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import SearchBar from "@/components/SearchBar";
 import SmartFilter from "@/components/SmartFilter";
 import FilteredResults from "@/components/FilteredResults";
@@ -15,18 +16,29 @@ import { useProgress } from "@/hooks/useProgress";
 import { useSmartFilter } from "@/hooks/useSmartFilter";
 import type { TMDBSearchResult, ShowDetail as ShowDetailType, WatchlistItem, WatchedItem } from "@/types";
 import {
-  getWatched, addToWatched, removeFromWatched, isWatched as checkIsWatched,
+  getWatched as getStoredWatched,
+  addToWatched,
+  removeFromWatched,
+  isWatched as checkIsWatched,
 } from "@/lib/localStorage";
 
 export default function Home() {
   const [selectedShow, setSelectedShow] = useState<ShowDetailType | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [, forceUpdate] = useState(0);
+  const [watchedItems, setWatchedItems] = useState<WatchedItem[]>([]);
 
   const watchlist = useWatchlist();
   const progress = useProgress();
   const smartFilter = useSmartFilter();
+
+  const refreshWatched = useCallback(() => {
+    setWatchedItems(getStoredWatched());
+  }, []);
+
+  useEffect(() => {
+    refreshWatched();
+  }, [refreshWatched]);
 
   const handleSearchSelect = async (result: TMDBSearchResult) => {
     setIsLoadingDetail(true);
@@ -77,7 +89,7 @@ export default function Home() {
       };
       addToWatched(item);
     }
-    forceUpdate((n) => n + 1);
+    refreshWatched();
   };
 
   const handleAdvanceEpisode = () => {
@@ -182,15 +194,12 @@ export default function Home() {
           )}
         </div>
 
-        {(() => {
-          const watchedData = getWatched();
-          return watchedData.length > 0 ? (
-            <>
-              <div className="border-t border-[#262626] my-10" />
-              <WatchedSection items={watchedData} onRemove={(id) => { removeFromWatched(id); forceUpdate((n) => n + 1); }} />
-            </>
-          ) : null;
-        })()}
+        {watchedItems.length > 0 && (
+          <>
+            <div className="border-t border-[#262626] my-10" />
+            <WatchedSection items={watchedItems} onRemove={(id) => { removeFromWatched(id); refreshWatched(); }} />
+          </>
+        )}
       </div>
     </main>
   );
