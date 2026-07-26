@@ -130,6 +130,10 @@ export interface WatchlistItem {
   posterPath: string | null;
   totalRuntimeMinutes: number;
   addedAt: number;
+  genres?: string[];
+  providers?: string[];
+  rating?: number;
+  year?: string;
 }
 
 export interface WatchedItem {

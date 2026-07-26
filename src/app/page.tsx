@@ -9,7 +9,7 @@ import Watchlist from "@/components/Watchlist";
 import WatchedSection from "@/components/WatchedSection";
 import StatsBar from "@/components/StatsBar";
 import EmptyState from "@/components/EmptyState";
-import { buildShowDetail } from "@/lib/tmdb";
+import { buildShowDetail, buildShowDetailById } from "@/lib/tmdb";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useProgress } from "@/hooks/useProgress";
 import { useSmartFilter } from "@/hooks/useSmartFilter";
@@ -49,12 +49,18 @@ export default function Home() {
       posterPath: show.posterPath,
       totalRuntimeMinutes: show.totalRuntimeMinutes,
       addedAt: Date.now(),
+      genres: show.genres,
+      providers: show.streamingProviders.map((p) => p.name),
+      rating: show.rating,
+      year: show.year,
     };
     watchlist.add(item);
+    smartFilter.refreshWatchlist();
   };
 
   const handleRemoveFromWatchlist = (id: number) => {
     watchlist.remove(id);
+    smartFilter.refreshWatchlist();
   };
 
   const handleToggleWatched = (show: ShowDetailType) => {
@@ -86,20 +92,19 @@ export default function Home() {
     }
   };
 
-  const handleFilterSelect = (id: number) => {
+  const handleFilterSelect = async (id: number) => {
     const item = watchlist.items.find((w) => w.id === id);
     if (item) {
-      const tmdbResult: TMDBSearchResult = {
-        id: item.id,
-        media_type: item.type,
-        name: item.title,
-        poster_path: item.posterPath,
-        backdrop_path: null,
-        overview: "",
-        vote_average: 0,
-        genre_ids: [],
-      };
-      handleSearchSelect(tmdbResult);
+      setIsLoadingDetail(true);
+      setDetailError(null);
+      try {
+        const detail = await buildShowDetailById(item.id, item.type);
+        setSelectedShow(detail);
+      } catch {
+        setDetailError("Failed to load show details. Please try again.");
+      } finally {
+        setIsLoadingDetail(false);
+      }
     }
   };
 

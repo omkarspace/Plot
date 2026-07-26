@@ -89,13 +89,20 @@ const calculateTotalRuntime = async (tvDetail: TMDBTVDetail): Promise<number> =>
 export const buildShowDetail = async (
   result: { id: number; media_type: "tv" | "movie" }
 ): Promise<ShowDetail> => {
-  if (result.media_type === "tv") {
-    const detail = await getTVDetail(result.id);
+  return buildShowDetailById(result.id, result.media_type);
+};
+
+export const buildShowDetailById = async (
+  id: number,
+  type: "tv" | "movie"
+): Promise<ShowDetail> => {
+  if (type === "tv") {
+    const detail = await getTVDetail(id);
     const totalRuntimeMinutes = await calculateTotalRuntime(detail);
 
     let providers: StreamingProvider[] = [];
     try {
-      const watchData = await getWatchProviders(detail.id, "tv");
+      const watchData = await getWatchProviders(id, "tv");
       const usProviders = watchData.results?.["US"];
       if (usProviders?.flatrate) {
         providers = usProviders.flatrate.map((p) => ({
@@ -145,14 +152,14 @@ export const buildShowDetail = async (
       seasonDetails,
     };
   } else {
-    const detail = await getMovieDetail(result.id);
+    const detail = await getMovieDetail(id);
     const runtime = detail.runtime || 0;
     const totalHours = runtime / 60;
     const totalDays = totalHours / 24;
 
     let providers: StreamingProvider[] = [];
     try {
-      const watchData = await getWatchProviders(detail.id, "movie");
+      const watchData = await getWatchProviders(id, "movie");
       const usProviders = watchData.results?.["US"];
       if (usProviders?.flatrate) {
         providers = usProviders.flatrate.map((p) => ({
