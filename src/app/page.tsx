@@ -130,6 +130,10 @@ export default function Home() {
           </p>
         </div>
 
+        <div className="mb-8">
+          <SearchBar onSelect={handleSearchSelect} />
+        </div>
+
         <SmartFilter
           timeBudget={smartFilter.criteria.timeBudget}
           selectedServices={smartFilter.criteria.services}
@@ -152,10 +156,6 @@ export default function Home() {
             />
           </div>
         )}
-
-        <div className="mb-8">
-          <SearchBar onSelect={handleSearchSelect} />
-        </div>
 
         {isLoadingDetail && (
           <div className="text-center py-12">
