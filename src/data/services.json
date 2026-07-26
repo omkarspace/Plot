@@ -1,0 +1,62 @@
+[
+  {
+    "id": "netflix",
+    "name": "Netflix",
+    "color": "#E50914",
+    "tmdbIds": [8, 203]
+  },
+  {
+    "id": "hbo",
+    "name": "Max",
+    "color": "#002BE7",
+    "tmdbIds": [384]
+  },
+  {
+    "id": "disney",
+    "name": "Disney+",
+    "color": "#0063E5",
+    "tmdbIds": [2739]
+  },
+  {
+    "id": "hulu",
+    "name": "Hulu",
+    "color": "#1CE783",
+    "tmdbIds": [15, 350]
+  },
+  {
+    "id": "prime",
+    "name": "Prime Video",
+    "color": "#00A8E1",
+    "tmdbIds": [9, 119]
+  },
+  {
+    "id": "apple",
+    "name": "Apple TV+",
+    "color": "#555555",
+    "tmdbIds": [2]
+  },
+  {
+    "id": "paramount",
+    "name": "Paramount+",
+    "color": "#0064FF",
+    "tmdbIds": [531]
+  },
+  {
+    "id": "peacock",
+    "name": "Peacock",
+    "color": "#FDB927",
+    "tmdbIds": [387]
+  },
+  {
+    "id": "crunchyroll",
+    "name": "Crunchyroll",
+    "color": "#F47521",
+    "tmdbIds": [283]
+  },
+  {
+    "id": "youtube",
+    "name": "YouTube",
+    "color": "#FF0000",
+    "tmdbIds": [192]
+  }
+]
