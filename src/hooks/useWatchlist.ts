@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   getWatchlist as getStoredWatchlist,
   addToWatchlist as addStored,
@@ -10,7 +10,11 @@ import {
 import type { WatchlistItem } from "@/types";
 
 export const useWatchlist = () => {
-  const [items, setItems] = useState<WatchlistItem[]>(() => getStoredWatchlist());
+  const [items, setItems] = useState<WatchlistItem[]>([]);
+
+  useEffect(() => {
+    setItems(getStoredWatchlist());
+  }, []);
 
   const refresh = useCallback(() => {
     setItems(getStoredWatchlist());

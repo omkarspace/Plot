@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   getProgress as getStoredProgress,
   updateProgress as updateStored,
@@ -10,7 +10,11 @@ import {
 import type { ShowProgress } from "@/types";
 
 export const useProgress = () => {
-  const [progress, setProgress] = useState<ShowProgress[]>(() => getStoredProgress());
+  const [progress, setProgress] = useState<ShowProgress[]>([]);
+
+  useEffect(() => {
+    setProgress(getStoredProgress());
+  }, []);
 
   const refresh = useCallback(() => {
     setProgress(getStoredProgress());
