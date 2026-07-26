@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { FilterCriteria, TimeBudget, FilterResult, WatchlistItem } from "@/types";
+import type { FilterCriteria, TimeBudget, FilterResult } from "@/types";
 import { filterWatchlist } from "@/lib/filter";
 import { getWatchlist } from "@/lib/localStorage";
 

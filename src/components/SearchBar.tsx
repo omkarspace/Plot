@@ -16,7 +16,7 @@ interface SearchBarProps {
 export default function SearchBar({ onSelect }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TMDBSearchResult[]>([]);
-  const [history, setHistory] = useState<SearchHistoryItem[]>([]);
+  const [history, setHistory] = useState<SearchHistoryItem[]>(() => getSearchHistory());
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -24,10 +24,6 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setHistory(getSearchHistory());
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
