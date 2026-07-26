@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { getImageUrl } from "@/lib/tmdb";
 import { formatRuntime, formatDaysHours, calculateBingeTime } from "@/lib/time";
-import type { ShowDetail as ShowDetailType } from "@/types";
+import ProgressTracker from "./ProgressTracker";
+import type { ShowDetail as ShowDetailType, ShowProgress } from "@/types";
 
 interface ShowDetailProps {
   show: ShowDetailType;
@@ -11,9 +12,21 @@ interface ShowDetailProps {
   isWatched: boolean;
   onAdd: (show: ShowDetailType) => void;
   onToggleWatched: (show: ShowDetailType) => void;
+  progress?: ShowProgress;
+  onAdvanceEpisode?: () => void;
+  onResetProgress?: () => void;
 }
 
-export default function ShowDetail({ show, isInWatchlist, isWatched, onAdd, onToggleWatched }: ShowDetailProps) {
+export default function ShowDetail({
+  show,
+  isInWatchlist,
+  isWatched,
+  onAdd,
+  onToggleWatched,
+  progress,
+  onAdvanceEpisode = () => {},
+  onResetProgress = () => {},
+}: ShowDetailProps) {
   const [added, setAdded] = useState(false);
   const [showSeasons, setShowSeasons] = useState(false);
   const [episodesPerDay, setEpisodesPerDay] = useState(2);
@@ -99,6 +112,19 @@ export default function ShowDetail({ show, isInWatchlist, isWatched, onAdd, onTo
                 </div>
               )}
             </div>
+
+            {/* Progress Tracking - TV shows only */}
+            {show.type === "tv" && show.seasons && show.episodes && (
+              <div className="mb-4">
+                <ProgressTracker
+                  progress={progress}
+                  totalSeasons={show.seasons}
+                  totalEpisodes={show.episodes}
+                  onAdvance={onAdvanceEpisode}
+                  onReset={onResetProgress}
+                />
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2 mb-4">
               {show.genres.map((genre) => (
