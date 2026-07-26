@@ -148,3 +148,52 @@ export interface SearchHistoryItem {
   posterPath: string | null;
   timestamp: number;
 }
+
+// === Streaming Services ===
+
+export interface StreamingService {
+  id: string;
+  name: string;
+  color: string;
+  tmdbIds: number[];
+}
+
+export interface UserServices {
+  services: string[];
+  updatedAt: number;
+}
+
+// === Smart Filter ===
+
+export type TimeBudget = "30min" | "1hr" | "2hr" | "all";
+
+export interface FilterCriteria {
+  timeBudget: TimeBudget;
+  services: string[];
+  genres: string[];
+  type: "all" | "tv" | "movie";
+}
+
+export interface FilterResult {
+  item: WatchlistItem;
+  fitsInTime: boolean;
+  availableOn: string[];
+  matchScore: number;
+}
+
+// === Progress Tracking ===
+
+export interface ShowProgress {
+  id: number;
+  type: "tv" | "movie";
+  title: string;
+  posterPath: string | null;
+  totalRuntimeMinutes: number;
+  currentSeason?: number;
+  currentEpisode?: number;
+  totalSeasons?: number;
+  totalEpisodes?: number;
+  watched?: boolean;
+  lastWatchedAt: number;
+  addedAt: number;
+}
