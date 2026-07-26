@@ -1,0 +1,64 @@
+import { NextResponse } from "next/server";
+import { embedText } from "@/lib/rag/embeddings";
+import { chunkDiscoveryItem } from "@/lib/rag/chunking";
+import { addVectors, hasShow } from "@/lib/rag/vectorStore";
+import { getCachedEmbedding, setCachedEmbedding } from "@/lib/rag/cache";
+import { getWatchlist } from "@/lib/localStorage";
+
+export const dynamic = "force-dynamic";
+
+export async function POST() {
+  try {
+    const watchlist = getWatchlist();
+    if (watchlist.length === 0) {
+      return NextResponse.json({ seeded: 0, skipped: 0, message: "Watchlist is empty" });
+    }
+
+    let seeded = 0;
+    let skipped = 0;
+
+    for (const item of watchlist) {
+      if (hasShow(item.id)) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        const overview = item.genres && item.genres.length > 0
+          ? `${item.title} is a ${item.type === "tv" ? "TV show" : "movie"} (${item.year || "unknown year"}) rated ${item.rating || "unknown"}/10. Genres: ${item.genres.join(", ")}. Available on: ${(item.providers || []).join(", ") || "unknown"}.`
+          : `${item.title} is a ${item.type === "tv" ? "TV show" : "movie"} rated ${item.rating || "unknown"}/10.`;
+
+        const discoveryLike = {
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          overview,
+          rating: item.rating || 0,
+          year: item.year || "unknown",
+          posterPath: item.posterPath,
+        };
+
+        const chunks = chunkDiscoveryItem(discoveryLike);
+        const entries = [];
+
+        for (const chunk of chunks) {
+          let embedding = getCachedEmbedding(chunk.content);
+          if (!embedding) {
+            embedding = await embedText(chunk.content);
+            setCachedEmbedding(chunk.content, embedding);
+          }
+          entries.push({ chunk, embedding });
+        }
+
+        addVectors(entries);
+        seeded++;
+      } catch {
+        // Skip items that fail
+      }
+    }
+
+    return NextResponse.json({ seeded, skipped });
+  } catch (error) {
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}

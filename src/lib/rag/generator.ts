@@ -1,17 +1,44 @@
 import type { SearchResult } from "@/types/rag";
 
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
+
 interface GenerationContext {
   query: string;
   results: SearchResult[];
   conversationHistory?: { role: string; content: string }[];
 }
 
-export const generateResponse = async (context: GenerationContext): Promise<string> => {
-  const { query, results, conversationHistory = [] } = context;
-
-  if (results.length === 0) {
-    return generateNoResultsResponse(query);
+export const isOllamaAvailable = async (): Promise<boolean> => {
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/tags`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
+};
+
+export const getAvailableModels = async (): Promise<string[]> => {
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/tags`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.models || []).map((m: { name: string }) => m.name);
+  } catch {
+    return [];
+  }
+};
+
+const buildSystemPrompt = (): string => {
+  return `You are Plot, a friendly and knowledgeable movie/TV recommendation assistant. You have access to a knowledge base of shows and movies. Answer questions conversationally, be concise (2-4 sentences max unless asked for detail), and always reference specific titles from the context. If you don't find relevant matches, say so honestly and suggest the user try different terms or seed more content.`;
+};
+
+const buildUserPrompt = (context: GenerationContext): string => {
+  const { query, results, conversationHistory = [] } = context;
 
   const contextText = results
     .map((r, i) => `[${i + 1}] ${r.chunk.content} (relevance: ${(r.score * 100).toFixed(0)}%)`)
@@ -19,42 +46,66 @@ export const generateResponse = async (context: GenerationContext): Promise<stri
 
   const recentHistory = conversationHistory.slice(-4);
   const historyText = recentHistory.length > 0
-    ? "\n\nPrevious conversation:\n" + recentHistory.map((m) => `${m.role}: ${m.content}`).join("\n")
+    ? recentHistory.map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`).join("\n")
     : "";
 
-  const prompt = `You are a helpful movie/TV recommendation assistant called Plot. Based on the following relevant content from your knowledge base, answer the user's question. Be concise, conversational, and helpful.
+  let prompt = `Knowledge Base:\n${contextText}\n`;
+  if (historyText) prompt += `\nConversation:\n${historyText}\n`;
+  prompt += `\nUser: ${query}\nAssistant:`;
 
-Knowledge Base Context:
-${contextText}
-${historyText}
-
-User Question: ${query}
-
-Answer:`;
-
-  try {
-    const response = await fetch("/api/rag/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, results }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.response;
-    }
-  } catch {
-    // Fall through to template response
-  }
-
-  return generateTemplateResponse(query, results);
+  return prompt;
 };
 
-const generateNoResultsResponse = (query: string): string => {
+export const generateWithOllama = async (context: GenerationContext): Promise<string | null> => {
+  try {
+    const systemPrompt = buildSystemPrompt();
+    const userPrompt = buildUserPrompt(context);
+
+    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        stream: false,
+        options: {
+          temperature: 0.7,
+          top_p: 0.9,
+          num_predict: 256,
+        },
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.message?.content?.trim() || null;
+  } catch {
+    return null;
+  }
+};
+
+export const generateResponse = async (context: GenerationContext): Promise<string> => {
+  if (context.results.length === 0) {
+    return generateNoResultsResponse(context.query);
+  }
+
+  // Try Ollama first
+  const ollamaResponse = await generateWithOllama(context);
+  if (ollamaResponse) return ollamaResponse;
+
+  // Fallback to template
+  return generateTemplateResponse(context.query, context.results);
+};
+
+export const generateNoResultsResponse = (query: string): string => {
   return `I don't have specific recommendations for "${query}" in my knowledge base yet. Try asking about shows or movies you'd like to explore, like "something like Breaking Bad" or "good sci-fi on Netflix". You can also seed more content into the knowledge base.`;
 };
 
-const generateTemplateResponse = (query: string, results: SearchResult[]): string => {
+export const generateTemplateResponse = (query: string, results: SearchResult[]): string => {
   const topResults = results.slice(0, 3);
   const titles = [...new Set(topResults.map((r) => r.chunk.metadata.title))];
 
@@ -64,5 +115,3 @@ const generateTemplateResponse = (query: string, results: SearchResult[]): strin
 
   return `I found ${titles.length} relevant result${titles.length > 1 ? "s" : ""} for "${query}":\n\n${topResults.map((r) => `• **${r.chunk.metadata.title}**: ${r.chunk.content}`).join("\n\n")}`;
 };
-
-export const generateWithTemplate = generateTemplateResponse;

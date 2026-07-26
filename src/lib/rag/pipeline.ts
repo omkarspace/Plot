@@ -1,6 +1,6 @@
 import { embedText } from "./embeddings";
 import { searchVectors, getStoreSize } from "./vectorStore";
-import { generateResponse, generateWithTemplate } from "./generator";
+import { generateResponse, generateTemplateResponse } from "./generator";
 import type { SearchResult, ChatMessage } from "@/types/rag";
 
 export interface PipelineResult {
@@ -46,7 +46,7 @@ export const runRAGPipeline = async (
         })),
       });
     } catch {
-      response = generateWithTemplate(query, searchResults);
+      response = generateTemplateResponse(query, searchResults);
     }
   }
 

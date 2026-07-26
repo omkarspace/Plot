@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,7 +15,9 @@ export default function KnowledgeBase() {
   const [status, setStatus] = useState<KBStatus | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isEmbeddingWatchlist, setIsEmbeddingWatchlist] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
+  const [embedResult, setEmbedResult] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +32,10 @@ export default function KnowledgeBase() {
     return () => { cancelled = true; };
   }, []);
 
+  const refreshStatus = () => {
+    fetch("/api/rag/status").then(r => r.json()).then(setStatus).catch(() => {});
+  };
+
   const handleSeed = async () => {
     setIsSeeding(true);
     setSeedResult(null);
@@ -38,11 +43,30 @@ export default function KnowledgeBase() {
       const res = await fetch("/api/rag/seed", { method: "POST" });
       const data = await res.json();
       setSeedResult(`Seeded ${data.seeded} shows (${data.skipped} cached)`);
-      await fetch("/api/rag/status").then(r => r.json()).then(setStatus).catch(() => {});
+      refreshStatus();
     } catch {
       setSeedResult("Failed to seed knowledge base");
     } finally {
       setIsSeeding(false);
+    }
+  };
+
+  const handleEmbedWatchlist = async () => {
+    setIsEmbeddingWatchlist(true);
+    setEmbedResult(null);
+    try {
+      const res = await fetch("/api/rag/embed-watchlist", { method: "POST" });
+      const data = await res.json();
+      if (data.message) {
+        setEmbedResult(data.message);
+      } else {
+        setEmbedResult(`Embedded ${data.seeded} watchlist items (${data.skipped} already in KB)`);
+      }
+      refreshStatus();
+    } catch {
+      setEmbedResult("Failed to embed watchlist");
+    } finally {
+      setIsEmbeddingWatchlist(false);
     }
   };
 
@@ -75,35 +99,31 @@ export default function KnowledgeBase() {
 
       {isExpanded && status && (
         <div className="border-t border-[#262626] p-4 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="bg-[#141414] rounded-lg p-3">
-              <p className="text-[#737373] text-xs">Status</p>
-              <p className={`text-sm font-semibold ${status.seeded ? "text-[#10b981]" : "text-[#eab308]"}`}>
+              <p className="text-[#737373] text-[10px] uppercase tracking-wider">Status</p>
+              <p className={`text-sm font-semibold mt-0.5 ${status.seeded ? "text-[#10b981]" : "text-[#eab308]"}`}>
                 {status.seeded ? "Active" : "Empty"}
               </p>
             </div>
             <div className="bg-[#141414] rounded-lg p-3">
-              <p className="text-[#737373] text-xs">Shows</p>
-              <p className="text-sm font-semibold text-white">{status.totalShows}</p>
+              <p className="text-[#737373] text-[10px] uppercase tracking-wider">Shows</p>
+              <p className="text-sm font-semibold text-white mt-0.5">{status.totalShows}</p>
             </div>
             <div className="bg-[#141414] rounded-lg p-3">
-              <p className="text-[#737373] text-xs">Vectors</p>
-              <p className="text-sm font-semibold text-white">{status.totalChunks}</p>
-            </div>
-            <div className="bg-[#141414] rounded-lg p-3">
-              <p className="text-[#737373] text-xs">Cache</p>
-              <p className="text-sm font-semibold text-white">{status.cacheSize}</p>
+              <p className="text-[#737373] text-[10px] uppercase tracking-wider">Vectors</p>
+              <p className="text-sm font-semibold text-white mt-0.5">{status.totalChunks}</p>
             </div>
           </div>
 
           {status.shows.length > 0 && (
             <div>
-              <p className="text-[#737373] text-xs mb-2">Embedded Shows</p>
+              <p className="text-[#737373] text-[10px] uppercase tracking-wider mb-2">Embedded Shows</p>
               <div className="flex flex-wrap gap-1">
                 {status.shows.map((show) => (
                   <span
                     key={show.id}
-                    className="text-xs bg-[#1a1a1a] text-[#a3a3a3] px-2 py-1 rounded border border-[#262626]"
+                    className="text-[11px] bg-[#141414] text-[#a3a3a3] px-2 py-1 rounded-md border border-[#262626]"
                   >
                     {show.title}
                     <span className="text-[#525252] ml-1">({show.type})</span>
@@ -117,20 +137,45 @@ export default function KnowledgeBase() {
             <button
               onClick={handleSeed}
               disabled={isSeeding}
-              className="flex-1 px-4 py-2 bg-[#10b981] text-white text-sm font-medium rounded-lg hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 bg-[#10b981] text-white text-sm font-medium rounded-xl hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSeeding ? "Seeding..." : "Seed Knowledge Base"}
+              {isSeeding ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Seeding...
+                </span>
+              ) : (
+                "Seed Demo Data"
+              )}
             </button>
             <button
-              onClick={() => fetch("/api/rag/status").then(r => r.json()).then(setStatus).catch(() => {})}
-              className="px-4 py-2 border border-[#262626] text-[#a3a3a3] text-sm rounded-lg hover:border-[#404040] transition-colors"
+              onClick={handleEmbedWatchlist}
+              disabled={isEmbeddingWatchlist}
+              className="flex-1 px-4 py-2.5 bg-[#3b82f6] text-white text-sm font-medium rounded-xl hover:bg-[#2563eb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {isEmbeddingWatchlist ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Embedding...
+                </span>
+              ) : (
+                "Embed My Watchlist"
+              )}
             </button>
           </div>
 
+          <button
+            onClick={refreshStatus}
+            className="w-full px-4 py-2 border border-[#262626] text-[#a3a3a3] text-sm rounded-xl hover:border-[#404040] transition-colors"
+          >
+            Refresh Status
+          </button>
+
           {seedResult && (
             <p className="text-xs text-[#737373] text-center">{seedResult}</p>
+          )}
+          {embedResult && (
+            <p className="text-xs text-[#3b82f6] text-center">{embedResult}</p>
           )}
         </div>
       )}
