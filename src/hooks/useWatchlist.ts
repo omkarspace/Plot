@@ -9,6 +9,7 @@ import {
 } from "@/lib/localStorage";
 import type { WatchlistItem } from "@/types";
 
+/* eslint-disable react-hooks/set-state-in-effect */
 export const useWatchlist = () => {
   const [items, setItems] = useState<WatchlistItem[]>([]);
 

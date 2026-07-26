@@ -7,6 +7,8 @@ import FilteredResults from "@/components/FilteredResults";
 import ShowDetail from "@/components/ShowDetail";
 import Watchlist from "@/components/Watchlist";
 import StatsBar from "@/components/StatsBar";
+import ChatPanel from "@/components/ChatPanel";
+import KnowledgeBase from "@/components/KnowledgeBase";
 import { buildShowDetail, buildShowDetailById } from "@/lib/tmdb";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useProgress } from "@/hooks/useProgress";
@@ -149,6 +151,11 @@ export default function Home() {
             <Watchlist items={watchlist.items} onRemove={handleRemoveFromWatchlist} />
           </div>
         )}
+
+        <div className="mt-10 space-y-4">
+          <ChatPanel />
+          <KnowledgeBase />
+        </div>
       </div>
 
       {isLoadingDetail && (

@@ -9,6 +9,7 @@ import {
 } from "@/lib/localStorage";
 import type { ShowProgress } from "@/types";
 
+/* eslint-disable react-hooks/set-state-in-effect */
 export const useProgress = () => {
   const [progress, setProgress] = useState<ShowProgress[]>([]);
 

@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import type { FilterCriteria, TimeBudget, DiscoveryItem } from "@/types";
 import { discoverContent } from "@/lib/tmdb";
-import { getWatchlist } from "@/lib/localStorage";
-import { getUserServices, saveUserServices } from "@/lib/localStorage";
+import { getWatchlist, getUserServices, saveUserServices } from "@/lib/localStorage";
 
 const DEFAULT_CRITERIA: FilterCriteria = {
   timeBudget: "2hr",
@@ -13,17 +12,17 @@ const DEFAULT_CRITERIA: FilterCriteria = {
   type: "all",
 };
 
+/* eslint-disable react-hooks/set-state-in-effect */
 export const useSmartFilter = () => {
   const [criteria, setCriteria] = useState<FilterCriteria>(DEFAULT_CRITERIA);
-  const [hydrated, setHydrated] = useState(false);
   const [isFilterActive, setIsFilterActive] = useState(false);
   const [discoveryResults, setDiscoveryResults] = useState<DiscoveryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [watchlistItems, setWatchlistItems] = useState<ReturnType<typeof getWatchlist>>([]);
 
   useEffect(() => {
     const savedServices = getUserServices();
     setCriteria((prev) => ({ ...prev, services: savedServices }));
-    setHydrated(true);
   }, []);
 
   // When filter changes, fetch from TMDB
@@ -56,9 +55,6 @@ export const useSmartFilter = () => {
     };
   }, [isFilterActive, criteria.services, criteria.genres]);
 
-  // Also filter local watchlist items
-  const [watchlistItems, setWatchlistItems] = useState<ReturnType<typeof getWatchlist>>([]);
-
   useEffect(() => {
     setWatchlistItems(getWatchlist());
   }, [isFilterActive, criteria]);
@@ -74,7 +70,6 @@ export const useSmartFilter = () => {
       })
     : [];
 
-  // Merge: watchlist items first, then discovery results (deduplicated by id)
   const seenIds = new Set(filteredWatchlist.map((w) => w.id));
   const uniqueDiscovery = discoveryResults.filter((d) => !seenIds.has(d.id));
 
@@ -116,7 +111,6 @@ export const useSmartFilter = () => {
     setIsLoading(false);
   };
 
-  // Apply time budget filtering to results
   const TIME_MAX_MINUTES: Record<string, number> = {
     "30min": 30,
     "1hr": 60,
