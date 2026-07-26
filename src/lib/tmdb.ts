@@ -6,7 +6,9 @@ import type {
   ShowDetail,
   SeasonDetail,
   StreamingProvider,
+  DiscoveryItem,
 } from "@/types";
+import { getServiceById } from "./services";
 
 const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
@@ -190,4 +192,143 @@ export const buildShowDetailById = async (
       },
     };
   }
+};
+
+// === TMDB Discover API ===
+
+// Genre ID mapping: mood filter id → TMDB genre IDs (for both TV and movie)
+const MOOD_TO_TV_GENRE: Record<string, string> = {
+  action: "10759",
+  comedy: "35",
+  drama: "18",
+  horror: "27",
+  "sci-fi": "10765",
+  thriller: "9648",
+  romance: "10749",
+  documentary: "99",
+  animation: "16",
+  mystery: "9648",
+};
+
+const MOOD_TO_MOVIE_GENRE: Record<string, string> = {
+  action: "28",
+  comedy: "35",
+  drama: "18",
+  horror: "27",
+  "sci-fi": "878",
+  thriller: "53",
+  romance: "10749",
+  documentary: "99",
+  animation: "16",
+  mystery: "9648",
+};
+
+interface TMDBDiscoverResponse {
+  results: {
+    id: number;
+    name?: string;
+    title?: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    overview: string;
+    vote_average: number;
+    first_air_date?: string;
+    release_date?: string;
+    genre_ids: number[];
+    media_type?: string;
+  }[];
+  total_results: number;
+  total_pages: number;
+}
+
+export const discoverContent = async (
+  serviceIds: string[],
+  moodIds: string[]
+): Promise<DiscoveryItem[]> => {
+  // Collect all TMDB provider IDs from selected services
+  const providerIds = new Set<number>();
+  for (const sid of serviceIds) {
+    const service = getServiceById(sid);
+    if (service) {
+      for (const tid of service.tmdbIds) {
+        providerIds.add(tid);
+      }
+    }
+  }
+
+  const providerStr = Array.from(providerIds).join("|");
+
+  // Collect TMDB genre IDs from selected moods
+  const tvGenreIds = moodIds
+    .map((m) => MOOD_TO_TV_GENRE[m])
+    .filter(Boolean)
+    .join(",");
+  const movieGenreIds = moodIds
+    .map((m) => MOOD_TO_MOVIE_GENRE[m])
+    .filter(Boolean)
+    .join(",");
+
+  const results: DiscoveryItem[] = [];
+
+  // Fetch TV shows
+  const tvParams: Record<string, string> = {
+    sort_by: "popularity.desc",
+    language: "en-US",
+    page: "1",
+  };
+  if (providerStr) tvParams.with_watch_providers = providerStr;
+  if (providerStr) tvParams.watch_region = "US";
+  if (providerStr) tvParams.with_watch_monetization_types = "flatrate";
+  if (tvGenreIds) tvParams.with_genres = tvGenreIds;
+
+  try {
+    const tvData = await fetchTMDB<TMDBDiscoverResponse>("/discover/tv", tvParams);
+    for (const item of tvData.results.slice(0, 10)) {
+      const year = item.first_air_date?.split("-")[0] || "";
+      results.push({
+        id: item.id,
+        type: "tv",
+        title: item.name || "Unknown",
+        posterPath: item.poster_path,
+        backdropPath: item.backdrop_path,
+        overview: item.overview,
+        rating: item.vote_average,
+        year,
+      });
+    }
+  } catch {
+    // TV discover failed, continue with movies
+  }
+
+  // Fetch movies
+  const movieParams: Record<string, string> = {
+    sort_by: "popularity.desc",
+    language: "en-US",
+    page: "1",
+  };
+  if (providerStr) movieParams.with_watch_providers = providerStr;
+  if (providerStr) movieParams.watch_region = "US";
+  if (providerStr) movieParams.with_watch_monetization_types = "flatrate";
+  if (movieGenreIds) movieParams.with_genres = movieGenreIds;
+
+  try {
+    const movieData = await fetchTMDB<TMDBDiscoverResponse>("/discover/movie", movieParams);
+    for (const item of movieData.results.slice(0, 10)) {
+      const year = item.release_date?.split("-")[0] || "";
+      results.push({
+        id: item.id,
+        type: "movie",
+        title: item.title || "Unknown",
+        posterPath: item.poster_path,
+        backdropPath: item.backdrop_path,
+        overview: item.overview,
+        rating: item.vote_average,
+        year,
+      });
+    }
+  } catch {
+    // Movie discover failed
+  }
+
+  return results;
 };

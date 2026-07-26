@@ -187,6 +187,17 @@ export interface FilterResult {
 
 // === Progress Tracking ===
 
+export interface DiscoveryItem {
+  id: number;
+  type: "tv" | "movie";
+  title: string;
+  posterPath: string | null;
+  backdropPath: string | null;
+  overview: string;
+  rating: number;
+  year: string;
+}
+
 export interface ShowProgress {
   id: number;
   type: "tv" | "movie";

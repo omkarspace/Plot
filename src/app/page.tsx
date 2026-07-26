@@ -67,12 +67,10 @@ export default function Home() {
       year: show.year,
     };
     watchlist.add(item);
-    smartFilter.refreshWatchlist();
   };
 
   const handleRemoveFromWatchlist = (id: number) => {
     watchlist.remove(id);
-    smartFilter.refreshWatchlist();
   };
 
   const handleToggleWatched = (show: ShowDetailType) => {
@@ -104,21 +102,20 @@ export default function Home() {
     }
   };
 
-  const handleFilterSelect = async (id: number) => {
-    const item = watchlist.items.find((w) => w.id === id);
-    if (item) {
-      setIsLoadingDetail(true);
-      setDetailError(null);
-      try {
-        const detail = await buildShowDetailById(item.id, item.type);
-        setSelectedShow(detail);
-      } catch {
-        setDetailError("Failed to load show details. Please try again.");
-      } finally {
-        setIsLoadingDetail(false);
-      }
+  const handleFilterSelect = async (id: number, type: "tv" | "movie") => {
+    setIsLoadingDetail(true);
+    setDetailError(null);
+    try {
+      const detail = await buildShowDetailById(id, type);
+      setSelectedShow(detail);
+    } catch {
+      setDetailError("Failed to load show details. Please try again.");
+    } finally {
+      setIsLoadingDetail(false);
     }
   };
+
+  const resultCount = smartFilter.watchlistResults.length + smartFilter.discoveryResults.length;
 
   return (
     <main className="min-h-screen px-4 py-8 md:py-12">
@@ -139,20 +136,22 @@ export default function Home() {
           selectedServices={smartFilter.criteria.services}
           selectedGenres={smartFilter.criteria.genres}
           isFilterActive={smartFilter.isFilterActive}
+          isLoading={smartFilter.isLoading}
           onTimeBudgetChange={smartFilter.setTimeBudget}
           onServiceToggle={smartFilter.toggleService}
           onGenreToggle={smartFilter.toggleGenre}
           onReset={smartFilter.resetFilter}
-          resultCount={smartFilter.results.length}
+          resultCount={resultCount}
         />
 
         {smartFilter.isFilterActive && (
           <div className="mb-10">
-            <h3 className="text-lg font-semibold text-white mb-4">Your matches</h3>
             <FilteredResults
-              results={smartFilter.results}
+              watchlistItems={smartFilter.watchlistResults}
+              discoveryItems={smartFilter.discoveryResults}
+              timeMaxMinutes={smartFilter.timeMaxMinutes}
               onSelect={handleFilterSelect}
-              onAddToWatchlist={() => {}}
+              isLoading={smartFilter.isLoading}
             />
           </div>
         )}
