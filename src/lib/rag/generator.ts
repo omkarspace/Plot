@@ -65,6 +65,62 @@ const buildUserPrompt = (context: GenerationContext): string => {
   return prompt;
 };
 
+export const generateWithOllamaStreaming = async function* (
+  context: GenerationContext
+): AsyncGenerator<string, void, unknown> {
+  try {
+    const systemPrompt = buildSystemPrompt();
+    const userPrompt = buildUserPrompt(context);
+
+    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        stream: true,
+        options: {
+          temperature: 0.7,
+          top_p: 0.9,
+          num_predict: 256,
+        },
+      }),
+    });
+
+    if (!res.ok || !res.body) return;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const json = JSON.parse(line);
+          if (json.message?.content) {
+            yield json.message.content;
+          }
+        } catch {
+          // Skip malformed lines
+        }
+      }
+    }
+  } catch {
+    // Streaming failed, silently return
+  }
+};
+
 export const generateWithOllama = async (context: GenerationContext): Promise<string | null> => {
   try {
     const systemPrompt = buildSystemPrompt();

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
@@ -84,7 +85,6 @@ export default function SearchPage() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setSemanticHistory(getSemanticHistory());
     fetch("/api/rag/status")

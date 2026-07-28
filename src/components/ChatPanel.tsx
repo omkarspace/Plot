@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { SearchResult } from "@/types/rag";
 
 interface Message {
@@ -68,7 +68,7 @@ export default function ChatPanel() {
     if (isExpanded) inputRef.current?.focus();
   }, [isExpanded]);
 
-  const handleSend = async (overrideInput?: string) => {
+  const handleSend = useCallback(async (overrideInput?: string) => {
     const text = (overrideInput || input).trim();
     if (!text || isLoading) return;
 
@@ -81,6 +81,8 @@ export default function ChatPanel() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+
+    const assistantId = ++msgIdRef.current;
 
     try {
       const response = await fetch("/api/rag/chat", {
@@ -95,29 +97,90 @@ export default function ChatPanel() {
         }),
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") || "";
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.response || "Sorry, I encountered an error.",
-        sources: data.searchResults || [],
-        id: ++msgIdRef.current,
-      };
+      if (contentType.includes("text/event-stream")) {
+        // Streaming response
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let fullContent = "";
+        let sources: SearchResult[] | undefined;
 
-      setMessages((prev) => [...prev, assistantMessage]);
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6);
+            try {
+              const event = JSON.parse(jsonStr);
+              if (event.type === "meta") {
+                sources = event.searchResults;
+              } else if (event.type === "chunk") {
+                fullContent += event.content;
+                // Update the assistant message in-place for streaming
+                setMessages((prev) => {
+                  const existing = prev.find((m) => m.id === assistantId);
+                  if (existing) {
+                    return prev.map((m) =>
+                      m.id === assistantId ? { ...m, content: fullContent } : m
+                    );
+                  }
+                  return [...prev, { role: "assistant", content: fullContent, sources, id: assistantId }];
+                });
+              } else if (event.type === "done") {
+                fullContent = event.fullResponse || fullContent;
+              } else if (event.type === "error") {
+                fullContent = event.message || "Streaming failed";
+              }
+            } catch {
+              // Skip malformed
+            }
+          }
+        }
+
+        // Ensure final message is set
+        setMessages((prev) => {
+          const existing = prev.find((m) => m.id === assistantId);
+          if (existing) {
+            return prev.map((m) =>
+              m.id === assistantId ? { ...m, content: fullContent || existing.content, sources: sources || existing.sources } : m
+            );
+          }
+          return [...prev, { role: "assistant", content: fullContent, sources, id: assistantId }];
+        });
+      } else {
+        // JSON response (non-streaming fallback)
+        const data = await response.json();
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data.response || "Sorry, I encountered an error.",
+            sources: data.searchResults || [],
+            id: assistantId,
+          },
+        ]);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
           content: "Failed to get a response. Make sure the knowledge base is seeded.",
-          id: ++msgIdRef.current,
+          id: assistantId,
         },
       ]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, isLoading]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -236,7 +299,7 @@ export default function ChatPanel() {
                 </div>
               </div>
             ))}
-            {isLoading && (
+            {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex justify-start">
                 <div className="bg-[#141414] border border-[#262626] rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-2">

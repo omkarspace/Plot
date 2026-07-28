@@ -36,6 +36,12 @@ export default function RootLayout({
               >
                 Search
               </Link>
+              <Link
+                href="/debug"
+                className="text-sm text-[#737373] hover:text-white transition-colors"
+              >
+                Debug
+              </Link>
             </div>
           </div>
         </nav>

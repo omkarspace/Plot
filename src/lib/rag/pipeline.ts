@@ -11,10 +11,29 @@ export interface PipelineResult {
   storeSize: number;
 }
 
+let autoSeedPromise: Promise<void> | null = null;
+
+export const ensureSeeded = async (): Promise<void> => {
+  if (getStoreSize() > 0) return;
+  if (autoSeedPromise) return autoSeedPromise;
+
+  autoSeedPromise = (async () => {
+    try {
+      const { seedKnowledgeBase } = await import("./seedData");
+      await seedKnowledgeBase();
+    } catch (e) {
+      console.error("Auto-seed failed:", e);
+    }
+  })();
+
+  return autoSeedPromise;
+};
+
 export const runSemanticSearch = async (
   query: string,
   topK: number = 5
 ): Promise<SearchResult[]> => {
+  await ensureSeeded();
   if (getStoreSize() === 0) return [];
 
   const queryEmbedding = await embedText(query);
@@ -25,6 +44,7 @@ export const runRAGPipeline = async (
   query: string,
   conversationHistory: ChatMessage[] = []
 ): Promise<PipelineResult> => {
+  await ensureSeeded();
   const storeSize = getStoreSize();
 
   const queryEmbedding = await embedText(query);
