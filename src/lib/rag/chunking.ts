@@ -1,12 +1,16 @@
 import type { TextChunk } from "@/types/rag";
 import type { WatchlistItem } from "@/types";
 
-let chunkCounter = 0;
-
-const makeChunkId = (showId: number, field: string): string => {
-  chunkCounter++;
-  return `${showId}-${field}-${chunkCounter}`;
-};
+function deterministicId(showId: number, field: string, index?: number): string {
+  const key = `${showId}-${field}${index !== undefined ? `-${index}` : ""}`;
+  // Simple deterministic hash - FNV-1a
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    hash ^= key.charCodeAt(i);
+    hash = (hash * 16777619) >>> 0;
+  }
+  return `${showId}-${field}-${hash.toString(36)}`;
+}
 
 export const chunkShow = (
   show: WatchlistItem
@@ -15,7 +19,7 @@ export const chunkShow = (
 
   if (show.genres && show.genres.length > 0) {
     chunks.push({
-      id: makeChunkId(show.id, "genres"),
+      id: deterministicId(show.id, "genres"),
       content: `${show.title} is a ${show.type === "tv" ? "TV show" : "movie"} in the genres: ${show.genres.join(", ")}.`,
       metadata: {
         showId: show.id,
@@ -29,7 +33,7 @@ export const chunkShow = (
 
   if (show.providers && show.providers.length > 0) {
     chunks.push({
-      id: makeChunkId(show.id, "providers"),
+      id: deterministicId(show.id, "providers"),
       content: `${show.title} is available on: ${show.providers.join(", ")}.`,
       metadata: {
         showId: show.id,
@@ -66,7 +70,7 @@ export const chunkSearchResult = (
     for (let i = 0; i < sentences.length; i += maxSentencesPerChunk) {
       const chunkSentences = sentences.slice(i, i + maxSentencesPerChunk).join(" ");
       chunks.push({
-        id: makeChunkId(result.id, `overview-${i}`),
+        id: deterministicId(result.id, "overview", i),
         content: `${title}: ${chunkSentences}`,
         metadata: {
           showId: result.id,
@@ -101,7 +105,7 @@ export const chunkDiscoveryItem = (
     for (let i = 0; i < sentences.length; i += maxSentencesPerChunk) {
       const chunkSentences = sentences.slice(i, i + maxSentencesPerChunk).join(" ");
       chunks.push({
-        id: makeChunkId(item.id, `overview-${i}`),
+        id: deterministicId(item.id, "overview", i),
         content: `${item.title} (${item.year}, rated ${item.rating}/10): ${chunkSentences}`,
         metadata: {
           showId: item.id,
@@ -115,7 +119,7 @@ export const chunkDiscoveryItem = (
   }
 
   chunks.push({
-    id: makeChunkId(item.id, "combined"),
+    id: deterministicId(item.id, "combined"),
     content: `${item.title} is a ${item.type === "tv" ? "TV series" : "movie"} from ${item.year} with a rating of ${item.rating}/10.`,
     metadata: {
       showId: item.id,

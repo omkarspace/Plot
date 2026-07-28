@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { embedText } from "@/lib/rag/embeddings";
-import { chunkDiscoveryItem } from "@/lib/rag/chunking";
-import { addVectors, hasShow } from "@/lib/rag/vectorStore";
-import { getCachedEmbedding, setCachedEmbedding } from "@/lib/rag/cache";
-import { getWatchlist } from "@/lib/localStorage";
 
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
+    const { getWatchlist } = await import("@/lib/localStorage");
+    const { embedText } = await import("@/lib/rag/embeddings");
+    const { chunkDiscoveryItem } = await import("@/lib/rag/chunking");
+    const { addVectors, hasShow } = await import("@/lib/rag/vectorStore");
+    const { getCachedEmbedding, setCachedEmbedding } = await import("@/lib/rag/cache");
+
     const watchlist = getWatchlist();
     if (watchlist.length === 0) {
       return NextResponse.json({ seeded: 0, skipped: 0, message: "Watchlist is empty" });
@@ -52,13 +53,13 @@ export async function POST() {
 
         addVectors(entries);
         seeded++;
-      } catch {
-        // Skip items that fail
+      } catch (e) {
+        console.error(`Failed to embed watchlist item "${item.title}":`, e);
       }
     }
 
     return NextResponse.json({ seeded, skipped });
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "Failed to embed watchlist" }, { status: 500 });
   }
 }

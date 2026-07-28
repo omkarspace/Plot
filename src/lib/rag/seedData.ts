@@ -1,7 +1,7 @@
 import type { SeedProgress } from "@/types/rag";
 import { embedText } from "./embeddings";
 import { chunkDiscoveryItem } from "./chunking";
-import { addVectors, hasShow, getStoreSize } from "./vectorStore";
+import { addVectors, hasShow, getStoreSize, getUniqueShows } from "./vectorStore";
 import { getCachedEmbedding, setCachedEmbedding } from "./cache";
 
 const SEED_SHOWS = [
@@ -71,8 +71,8 @@ export const seedKnowledgeBase = async (
 
       addVectors(entries);
       seeded++;
-    } catch {
-      // Skip shows that fail
+    } catch (e) {
+      console.error(`Failed to seed "${show.title}":`, e);
     }
   }
 
@@ -84,5 +84,5 @@ export const getSeedShowCount = (): number => SEED_SHOWS.length;
 
 export const getVectorStoreStatus = () => ({
   totalVectors: getStoreSize(),
-  totalShows: new Set(SEED_SHOWS.map((s) => s.id)).size,
+  totalShows: getUniqueShows().size,
 });

@@ -18,7 +18,6 @@ export const useSmartFilter = () => {
   const [isFilterActive, setIsFilterActive] = useState(false);
   const [discoveryResults, setDiscoveryResults] = useState<DiscoveryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [watchlistItems, setWatchlistItems] = useState<ReturnType<typeof getWatchlist>>([]);
 
   useEffect(() => {
     const savedServices = getUserServices();
@@ -55,12 +54,8 @@ export const useSmartFilter = () => {
     };
   }, [isFilterActive, criteria.services, criteria.genres]);
 
-  useEffect(() => {
-    setWatchlistItems(getWatchlist());
-  }, [isFilterActive, criteria]);
-
   const filteredWatchlist = isFilterActive
-    ? watchlistItems.filter((item) => {
+    ? getWatchlist().filter((item) => {
         if (criteria.type !== "all" && item.type !== criteria.type) return false;
         if (criteria.genres.length > 0) {
           const itemGenres = (item.genres ?? []).map((g) => g.toLowerCase());

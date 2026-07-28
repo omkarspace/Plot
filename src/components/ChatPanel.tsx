@@ -17,8 +17,18 @@ const SUGGESTED_PROMPTS = [
   "Hidden gems with high ratings",
 ];
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function renderMarkdown(text: string): string {
-  return text
+  const safe = escapeHtml(text);
+  return safe
     .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code class="bg-[#262626] px-1.5 py-0.5 rounded text-xs text-[#e4e4e7]">$1</code>')
@@ -37,6 +47,7 @@ export default function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const msgIdRef = useRef(0);
+  const messagesRef = useRef<Message[]>([]);
 
   useEffect(() => {
     fetch("/api/rag/ollama")
@@ -44,6 +55,10 @@ export default function ChatPanel() {
       .then(d => setOllamaStatus(d.available ? "connected" : "unavailable"))
       .catch(() => setOllamaStatus("unavailable"));
   }, []);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -73,7 +88,7 @@ export default function ChatPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: userMessage.content,
-          history: messages.slice(-4).map((m) => ({
+          history: messagesRef.current.slice(-4).map((m) => ({
             role: m.role,
             content: m.content,
           })),
@@ -185,8 +200,8 @@ export default function ChatPanel() {
               </div>
             )}
 
-            {!showSuggestions && messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            {!showSuggestions && messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                     msg.role === "user"

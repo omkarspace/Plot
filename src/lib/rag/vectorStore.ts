@@ -17,14 +17,26 @@ export const cosineSimilarity = (a: number[], b: number[]): number => {
 };
 
 export const addVectors = (entries: VectorEntry[]): void => {
-  store.push(...entries);
+  // Deduplicate by chunk ID before adding
+  const existingIds = new Set(store.map((e) => e.chunk.id));
+  const newEntries = entries.filter((e) => !existingIds.has(e.chunk.id));
+  store.push(...newEntries);
 };
 
 export const searchVectors = (
   queryEmbedding: number[],
-  topK: number = 5
+  topK: number = 5,
+  filter?: { type?: string; showId?: number }
 ): SearchResult[] => {
-  const scored = store.map((entry) => ({
+  let candidates = store;
+  if (filter?.type) {
+    candidates = candidates.filter((e) => e.chunk.metadata.type === filter.type);
+  }
+  if (filter?.showId) {
+    candidates = candidates.filter((e) => e.chunk.metadata.showId === filter.showId);
+  }
+
+  const scored = candidates.map((entry) => ({
     chunk: entry.chunk,
     score: cosineSimilarity(queryEmbedding, entry.embedding),
   }));
@@ -62,4 +74,18 @@ export const hasShow = (showId: number): boolean => {
 
 export const getChunksByShow = (showId: number): TextChunk[] => {
   return store.filter((e) => e.chunk.metadata.showId === showId).map((e) => e.chunk);
+};
+
+// Persistence: serialize/deserialize for JSON file storage
+export const serializeStore = (): string => JSON.stringify(store);
+
+export const deserializeStore = (data: string): void => {
+  try {
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      store = parsed;
+    }
+  } catch {
+    // Invalid data, keep empty store
+  }
 };

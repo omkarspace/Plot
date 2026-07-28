@@ -86,7 +86,6 @@ export default function SearchPage() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSemanticHistory(getSemanticHistory());
     fetch("/api/rag/status")
       .then((r) => r.json())

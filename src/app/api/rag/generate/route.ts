@@ -5,14 +5,14 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const { prompt } = await request.json();
-    if (!prompt) {
+    if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
     const response = generateLocalResponse(prompt);
     return NextResponse.json({ response });
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "Generation failed" }, { status: 500 });
   }
 }
 

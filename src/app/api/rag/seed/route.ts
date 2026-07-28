@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+let seedingInProgress = false;
+
 export async function POST() {
+  if (seedingInProgress) {
+    return NextResponse.json({ error: "Seeding already in progress" }, { status: 409 });
+  }
+
+  seedingInProgress = true;
   try {
     const { seedKnowledgeBase, getSeedShowCount } = await import("@/lib/rag/seedData");
     const result = await seedKnowledgeBase();
@@ -10,8 +17,10 @@ export async function POST() {
       ...result,
       totalAvailable: getSeedShowCount(),
     });
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "Seeding failed" }, { status: 500 });
+  } finally {
+    seedingInProgress = false;
   }
 }
 

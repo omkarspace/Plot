@@ -10,12 +10,12 @@ import type {
 } from "@/types";
 import { getServiceById } from "./services";
 
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+const API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
 if (!API_KEY) {
-  console.error("Missing NEXT_PUBLIC_TMDB_API_KEY in .env.local");
+  console.error("Missing TMDB_API_KEY in .env.local");
 }
 
 export const getImageUrl = (path: string | null, size: string = "w342"): string => {
@@ -68,16 +68,18 @@ const calculateTotalRuntime = async (tvDetail: TMDBTVDetail): Promise<number> =>
     return tvDetail.episode_run_time[0] * tvDetail.number_of_episodes;
   }
 
+  const nonSpecialSeasons = tvDetail.seasons.filter((s) => s.season_number > 0);
+
+  const seasonResults = await Promise.allSettled(
+    nonSpecialSeasons.map((season) => getSeasonDetail(tvDetail.id, season.season_number))
+  );
+
   let totalMinutes = 0;
-  for (const season of tvDetail.seasons) {
-    if (season.season_number === 0) continue;
-    try {
-      const seasonDetail = await getSeasonDetail(tvDetail.id, season.season_number);
-      for (const episode of seasonDetail.episodes) {
+  for (const result of seasonResults) {
+    if (result.status === "fulfilled") {
+      for (const episode of result.value.episodes) {
         totalMinutes += episode.runtime || 0;
       }
-    } catch {
-      // If we can't get season detail, estimate from episode count
     }
   }
 
@@ -99,21 +101,19 @@ export const buildShowDetailById = async (
   type: "tv" | "movie"
 ): Promise<ShowDetail> => {
   if (type === "tv") {
-    const detail = await getTVDetail(id);
+    const [detail, watchData] = await Promise.all([
+      getTVDetail(id),
+      getWatchProviders(id, "tv").catch(() => null),
+    ]);
     const totalRuntimeMinutes = await calculateTotalRuntime(detail);
 
     let providers: StreamingProvider[] = [];
-    try {
-      const watchData = await getWatchProviders(id, "tv");
-      const usProviders = watchData.results?.["US"];
-      if (usProviders?.flatrate) {
-        providers = usProviders.flatrate.map((p) => ({
-          name: p.provider_name,
-          logoPath: p.logo_path,
-        }));
-      }
-    } catch {
-      // Providers not available, continue without
+    const usProviders = watchData?.results?.["US"];
+    if (usProviders?.flatrate) {
+      providers = usProviders.flatrate.map((p) => ({
+        name: p.provider_name,
+        logoPath: p.logo_path,
+      }));
     }
 
     const startYear = detail.first_air_date?.split("-")[0] || "Unknown";
@@ -154,23 +154,21 @@ export const buildShowDetailById = async (
       seasonDetails,
     };
   } else {
-    const detail = await getMovieDetail(id);
+    const [detail, watchData] = await Promise.all([
+      getMovieDetail(id),
+      getWatchProviders(id, "movie").catch(() => null),
+    ]);
     const runtime = detail.runtime || 0;
     const totalHours = runtime / 60;
     const totalDays = totalHours / 24;
 
     let providers: StreamingProvider[] = [];
-    try {
-      const watchData = await getWatchProviders(id, "movie");
-      const usProviders = watchData.results?.["US"];
-      if (usProviders?.flatrate) {
-        providers = usProviders.flatrate.map((p) => ({
-          name: p.provider_name,
-          logoPath: p.logo_path,
-        }));
-      }
-    } catch {
-      // Providers not available, continue without
+    const usProviders = watchData?.results?.["US"];
+    if (usProviders?.flatrate) {
+      providers = usProviders.flatrate.map((p) => ({
+        name: p.provider_name,
+        logoPath: p.logo_path,
+      }));
     }
 
     return {
