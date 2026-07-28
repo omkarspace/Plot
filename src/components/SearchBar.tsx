@@ -118,55 +118,81 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
   const showHistory = isFocused && !query && history.length > 0;
 
   return (
-    <div ref={dropdownRef} className="relative w-full max-w-2xl mx-auto">
+    <div ref={dropdownRef} className="relative w-full">
+      {/* Search Input — station information desk */}
       <div className="relative">
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => handleSearch(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            setIsFocused(true);
-            if (results.length > 0) setIsOpen(true);
-          }}
-          placeholder="Search for a TV show or movie..."
-          className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#262626] rounded-xl text-white placeholder-[#737373] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all text-lg"
-        />
-        {isLoading && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <div className="w-5 h-5 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center bg-flap-black border border-ruled">
+          {/* Magnifying glass icon */}
+          <div className="pl-4 pr-3 flex-shrink-0">
+            <svg className="w-5 h-5 text-steel-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
-        )}
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => handleSearch(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => {
+              setIsFocused(true);
+              if (results.length > 0) setIsOpen(true);
+            }}
+            placeholder="SEARCH DEPARTURES"
+            className="flex-1 py-4 bg-transparent text-flap-white placeholder-steel-dark text-sm uppercase tracking-wider focus:outline-none font-[family-name:var(--font-board)] font-medium"
+          />
+          {isLoading && (
+            <div className="pr-4">
+              <div className="w-4 h-4 border-2 border-delay-amber border-t-transparent animate-spin" />
+            </div>
+          )}
+          {!isLoading && query && (
+            <button
+              onClick={() => {
+                setQuery("");
+                setResults([]);
+                setIsOpen(false);
+              }}
+              className="pr-4 text-steel-dark hover:text-flap-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Search History — recent departures */}
       {showHistory && (
-        <div className="absolute z-50 w-full mt-2 bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 shadow-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[#737373] text-xs uppercase tracking-wide">Recent</p>
+        <div className="absolute z-50 w-full mt-1 bg-flap-black border border-ruled shadow-2xl">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-ruled">
+            <p className="text-steel-dark text-[10px] uppercase tracking-[0.2em] font-[family-name:var(--font-board)]">
+              Recent Departures
+            </p>
             <button
               onClick={() => {
                 clearSearchHistory();
                 setHistory([]);
               }}
-              className="text-[#525252] text-xs hover:text-[#737373]"
+              className="text-steel-dark text-[10px] uppercase tracking-wider hover:text-steel-frame transition-colors font-[family-name:var(--font-board)]"
             >
               Clear
             </button>
           </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-0 overflow-x-auto scrollbar-hide">
             {history.map((item) => (
               <button
                 key={`${item.id}-${item.timestamp}`}
                 onClick={() => handleHistorySelect(item)}
-                className="flex items-center gap-2 px-3 py-2 bg-[#0f0f0f] rounded-full border border-[#262626] hover:border-[#3b82f6]/50 transition-colors flex-shrink-0"
+                className="flex items-center gap-3 px-4 py-3 border-b border-ruled hover:bg-flap-shadow transition-colors flex-shrink-0 group"
               >
                 <img
                   src={getImageUrl(item.posterPath, "w45")}
                   alt={item.title}
-                  className="w-6 h-6 rounded-full object-cover"
+                  className="w-6 h-9 object-cover flex-shrink-0"
                 />
-                <span className="text-[#a3a3a3] text-sm truncate max-w-[150px]">
+                <span className="text-flap-white text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-medium truncate max-w-[140px] group-hover:text-delay-amber transition-colors">
                   {item.title}
                 </span>
               </button>
@@ -175,40 +201,52 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
         </div>
       )}
 
+      {/* Search Results — departure list */}
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-[#1a1a1a] border border-[#262626] rounded-xl overflow-hidden shadow-2xl">
+        <div className="absolute z-50 w-full mt-1 bg-flap-black border border-ruled shadow-2xl">
+          {/* Column headers */}
+          <div className="departure-row text-[10px] uppercase tracking-[0.2em] text-steel-dark font-[family-name:var(--font-board)] border-b border-ruled">
+            <span>Time</span>
+            <span>Destination</span>
+            <span>Type</span>
+            <span>Rating</span>
+            <span></span>
+          </div>
           {results.map((result, index) => (
             <button
               key={result.id}
               onClick={() => handleSelect(result)}
               onMouseEnter={() => setHighlightIndex(index)}
-              className={`w-full flex items-center gap-4 px-4 py-3 transition-colors ${
-                index === highlightIndex ? "bg-[#252525]" : "hover:bg-[#1f1f1f]"
+              className={`w-full departure-row transition-colors ${
+                index === highlightIndex
+                  ? "bg-flap-shadow"
+                  : "hover:bg-flap-shadow"
               }`}
             >
-              <img
-                src={getImageUrl(result.poster_path, "w92")}
-                alt={getTitle(result)}
-                className="w-10 h-15 object-cover rounded"
-              />
-              <div className="text-left flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{getTitle(result)}</p>
-                <p className="text-[#737373] text-sm">
-                  {getYear(result)} ·{" "}
-                  <span className="capitalize px-1.5 py-0.5 bg-[#262626] rounded text-xs">
-                    {result.media_type}
-                  </span>
-                </p>
-              </div>
-              <span className="text-[#737373] text-sm">★ {result.vote_average.toFixed(1)}</span>
+              <span className="text-steel-dark font-[family-name:var(--font-mono)] text-xs">
+                {getYear(result)}
+              </span>
+              <span className="text-flap-white uppercase tracking-wider font-[family-name:var(--font-board)] font-medium text-sm truncate">
+                {getTitle(result)}
+              </span>
+              <span className="text-steel-dark text-xs uppercase font-[family-name:var(--font-board)]">
+                {result.media_type}
+              </span>
+              <span className="status-on-time font-[family-name:var(--font-mono)] text-xs">
+                {result.vote_average.toFixed(1)}
+              </span>
+              <span className="text-steel-dark text-xs">→</span>
             </button>
           ))}
         </div>
       )}
 
+      {/* No Results */}
       {isOpen && results.length === 0 && !isLoading && query.length >= 2 && (
-        <div className="absolute z-50 w-full mt-2 bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 text-center text-[#737373]">
-          No results found for &ldquo;{query}&rdquo;
+        <div className="absolute z-50 w-full mt-1 bg-flap-black border border-ruled p-6 text-center">
+          <p className="text-steel-dark text-sm uppercase tracking-wider font-[family-name:var(--font-board)]">
+            No departures found for &ldquo;{query}&rdquo;
+          </p>
         </div>
       )}
     </div>

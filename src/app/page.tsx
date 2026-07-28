@@ -106,19 +106,32 @@ export default function Home() {
   const resultCount = smartFilter.watchlistResults.length + smartFilter.discoveryResults.length;
 
   return (
-    <main className="min-h-screen">
-      <div className="px-4 py-8 md:py-12 max-w-5xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">Plot</h1>
-          <p className="text-[#737373]">
-            Stop scrolling. Start watching.
+    <div className="min-h-screen relative">
+      <div className="max-w-[1100px] mx-auto px-4 py-10 md:py-14">
+        {/* Board Header — the split-flap PLOT title */}
+        <div className="mb-10">
+          <div className="flex items-center gap-1 mb-3">
+            {"PLOT".split("").map((char, i) => (
+              <span
+                key={i}
+                className="flap-char text-4xl md:text-5xl w-12 h-16 md:w-14 md:h-[72px]"
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                {char}
+              </span>
+            ))}
+          </div>
+          <p className="text-steel-dark text-sm uppercase tracking-[0.2em] font-[family-name:var(--font-board)]">
+            Departure board for your evening
           </p>
         </div>
 
+        {/* Search — station information desk */}
         <div className="mb-8">
           <SearchBar onSelect={handleSearchSelect} />
         </div>
 
+        {/* Smart Filter — board column controls */}
         <SmartFilter
           timeBudget={smartFilter.criteria.timeBudget}
           selectedServices={smartFilter.criteria.services}
@@ -133,6 +146,7 @@ export default function Home() {
           watchlistCount={watchlist.items.length}
         />
 
+        {/* Filtered Results — departure rows */}
         {smartFilter.isFilterActive && (
           <div className="mb-10">
             <FilteredResults
@@ -145,6 +159,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* Watchlist — booked departures */}
         {watchlist.items.length > 0 && (
           <div className="mt-10">
             <StatsBar totalMinutes={watchlist.totalMinutes} count={watchlist.items.length} />
@@ -152,40 +167,65 @@ export default function Home() {
           </div>
         )}
 
-        <div className="mt-10 space-y-4">
+        {/* Bottom Section */}
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
           <ChatPanel />
           <KnowledgeBase />
         </div>
       </div>
 
+      {/* Loading State */}
       {isLoadingDetail && (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-[#737373] mt-4">Loading show details...</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-flap-black/90">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex gap-1">
+              {["L","O","A","D","I","N","G"].map((char, i) => (
+                <span
+                  key={i}
+                  className="flap-char text-xl w-8 h-10 flap-animate"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  {char}
+                </span>
+              ))}
+            </div>
+            <p className="text-steel-dark text-sm uppercase tracking-wider font-[family-name:var(--font-board)]">
+              Fetching departure
+            </p>
+          </div>
         </div>
       )}
 
+      {/* Error State */}
       {detailError && (
-        <div className="text-center py-12">
-          <p className="text-red-400">{detailError}</p>
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-flap-black border border-cancelled-red/50">
+          <p className="status-over-time text-sm">{detailError}</p>
         </div>
       )}
 
+      {/* Show Detail Modal */}
       {selectedShow && !isLoadingDetail && (
-        <div className="w-full px-4 pb-10">
-          <ShowDetail
-            show={selectedShow}
-            isInWatchlist={watchlist.isInList(selectedShow.id)}
-            isWatched={checkIsWatched(selectedShow.id)}
-            onAdd={handleAddToWatchlist}
-            onRemove={handleRemoveFromWatchlist}
-            onToggleWatched={handleToggleWatched}
-            progress={progress.getForShow(selectedShow.id)}
-            onAdvanceEpisode={handleAdvanceEpisode}
-            onResetProgress={handleResetProgress}
+        <div className="fixed inset-0 z-40 flex items-end md:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-flap-black/90"
+            onClick={() => setSelectedShow(null)}
           />
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 mb-0 md:mb-0 md:rounded-none">
+            <ShowDetail
+              show={selectedShow}
+              isInWatchlist={watchlist.isInList(selectedShow.id)}
+              isWatched={checkIsWatched(selectedShow.id)}
+              onAdd={handleAddToWatchlist}
+              onRemove={handleRemoveFromWatchlist}
+              onToggleWatched={handleToggleWatched}
+              progress={progress.getForShow(selectedShow.id)}
+              onAdvanceEpisode={handleAdvanceEpisode}
+              onResetProgress={handleResetProgress}
+              onClose={() => setSelectedShow(null)}
+            />
+          </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

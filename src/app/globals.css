@@ -1,20 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #0f0f0f;
-  --color-foreground: #ffffff;
-  --color-card: #1a1a1a;
-  --color-card-hover: #252525;
-  --color-accent: #3b82f6;
-  --color-accent-hover: #2563eb;
-  --color-muted: #737373;
-  --color-border: #262626;
+  --color-flap-black: #0D0D0F;
+  --color-flap-shadow: #1B1B1E;
+  --color-flap-white: #F2F2F2;
+  --color-delay-amber: #FFB400;
+  --color-cancelled-red: #D32F2F;
+  --color-steel-frame: #B6BBC2;
+  --color-steel-dark: #7D838C;
+  --color-board-surface: #141416;
+  --color-row-alt: #18181B;
+  --color-ruled: #2A2A2E;
+  --font-board: 'Barlow Condensed', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background-color: #0f0f0f;
-  color: #ffffff;
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #0D0D0F;
+  color: #F2F2F2;
+  font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(255, 180, 0, 0.3);
+  color: #F2F2F2;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0D0D0F;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2A2E;
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7D838C;
 }
 
 @layer utilities {
@@ -37,4 +72,151 @@ body {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+}
+
+/* Split-flap character */
+.flap-char {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.4em;
+  background: #0D0D0F;
+  border: 1px solid #1B1B1E;
+  position: relative;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #F2F2F2;
+  overflow: hidden;
+}
+
+.flap-char::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: #1B1B1E;
+  z-index: 1;
+}
+
+/* Flap flip animation */
+@keyframes flap-flip-in {
+  0% {
+    transform: rotateX(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+.flap-animate {
+  animation: flap-flip-in 0.15s ease-out forwards;
+  transform-origin: center bottom;
+  perspective: 200px;
+}
+
+/* Departure row */
+.departure-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 80px 100px 48px;
+  align-items: center;
+  height: 48px;
+  border-bottom: 1px solid #2A2A2E;
+  padding: 0 16px;
+  transition: background-color 0.15s ease;
+}
+
+.departure-row:hover {
+  background-color: #1B1B1E;
+}
+
+/* Board frame */
+.board-frame {
+  border: 2px solid #2A2A2E;
+  background: #0D0D0F;
+  position: relative;
+}
+
+.board-frame::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid #1B1B1E;
+  pointer-events: none;
+}
+
+/* Status badges */
+.status-on-time {
+  color: #FFB400;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.status-over-time {
+  color: #D32F2F;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Amber pulse for active status */
+@keyframes amber-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.amber-pulse {
+  animation: amber-pulse 2s ease-in-out infinite;
+}
+
+/* Steel brushed texture (CSS only) */
+.steel-texture {
+  background: linear-gradient(
+    135deg,
+    #2A2A2E 0%,
+    #3A3A3E 25%,
+    #2A2A2E 50%,
+    #3A3A3E 75%,
+    #2A2A2E 100%
+  );
+  background-size: 4px 4px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 0;
+  background: #2A2A2E;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  background: #FFB400;
+  cursor: pointer;
+  border: 2px solid #0D0D0F;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  background: #FFB400;
+  cursor: pointer;
+  border: 2px solid #0D0D0F;
 }

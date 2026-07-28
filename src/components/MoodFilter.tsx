@@ -13,7 +13,7 @@ const MOODS = [
   { id: "sci-fi", label: "Sci-Fi" },
   { id: "thriller", label: "Thriller" },
   { id: "romance", label: "Romance" },
-  { id: "documentary", label: "Documentary" },
+  { id: "documentary", label: "Docs" },
   { id: "animation", label: "Animation" },
   { id: "mystery", label: "Mystery" },
 ];
@@ -21,18 +21,20 @@ const MOODS = [
 export default function MoodFilter({ selected, onToggle }: MoodFilterProps) {
   return (
     <div>
-      <p className="text-[#737373] text-sm mb-3">What are you in the mood for?</p>
-      <div className="flex flex-wrap gap-2">
+      <p className="text-steel-dark text-[10px] uppercase tracking-[0.2em] font-[family-name:var(--font-board)] mb-3">
+        What&apos;s the mood?
+      </p>
+      <div className="flex flex-wrap gap-0 border border-ruled">
         {MOODS.map((mood) => {
           const isSelected = selected.includes(mood.id);
           return (
             <button
               key={mood.id}
               onClick={() => onToggle(mood.id)}
-              className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+              className={`px-4 py-2.5 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-medium transition-colors border-r border-ruled last:border-r-0 ${
                 isSelected
-                  ? "bg-[#3b82f6] text-white"
-                  : "bg-[#1a1a1a] text-[#737373] hover:bg-[#252525] hover:text-white border border-[#262626]"
+                  ? "bg-delay-amber/10 text-delay-amber border-b-2 border-b-delay-amber"
+                  : "text-steel-frame hover:text-flap-white hover:bg-flap-shadow border-b-2 border-b-transparent"
               }`}
             >
               {mood.label}

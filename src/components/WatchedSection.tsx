@@ -17,37 +17,54 @@ export default function WatchedSection({ items, onRemove }: WatchedSectionProps)
   return (
     <div>
       <div className="flex items-center gap-3 mb-4">
-        <h2 className="text-xl font-bold text-white">Watched</h2>
-        <span className="text-[#737373] text-sm">
-          {items.length} {items.length === 1 ? "item" : "items"} · {formatRuntime(totalMinutes)} total
+        <h2 className="text-flap-white text-sm uppercase tracking-[0.15em] font-[family-name:var(--font-board)] font-semibold">
+          Completed Departures
+        </h2>
+        <span className="text-steel-dark text-xs uppercase tracking-wider font-[family-name:var(--font-board)]">
+          {items.length} items · {formatRuntime(totalMinutes)} total
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {items.map((item) => (
+
+      <div className="board-frame">
+        {/* Column headers */}
+        <div className="departure-row text-[10px] uppercase tracking-[0.2em] text-steel-dark font-[family-name:var(--font-board)] bg-board-surface border-b border-ruled">
+          <span>Time</span>
+          <span>Destination</span>
+          <span>Type</span>
+          <span>Status</span>
+          <span></span>
+        </div>
+
+        {items.map((item, index) => (
           <div
             key={item.id}
-            className="group relative bg-[#1a1a1a] rounded-xl overflow-hidden border border-[#262626] hover:border-green-500/50 transition-colors"
+            className={`departure-row group ${index % 2 === 1 ? "bg-row-alt" : ""}`}
           >
-            <div className="absolute top-2 left-2 z-10 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs">✓</span>
+            <span className="text-delay-amber font-[family-name:var(--font-mono)] text-xs font-medium">
+              {formatRuntime(item.totalRuntimeMinutes)}
+            </span>
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src={getImageUrl(item.posterPath, "w45")}
+                alt={item.title}
+                className="w-6 h-9 object-cover flex-shrink-0 border border-ruled"
+              />
+              <span className="text-flap-white uppercase tracking-wider font-[family-name:var(--font-board)] font-medium text-sm truncate">
+                {item.title}
+              </span>
             </div>
-            <img
-              src={getImageUrl(item.posterPath, "w342")}
-              alt={item.title}
-              className="w-full aspect-[2/3] object-cover"
-            />
-            <div className="p-3">
-              <p className="text-white text-sm font-medium truncate">{item.title}</p>
-              <p className="text-green-400 text-sm font-semibold">
-                {formatRuntime(item.totalRuntimeMinutes)}
-              </p>
-            </div>
+            <span className="text-steel-dark text-xs uppercase font-[family-name:var(--font-board)]">
+              {item.type === "tv" ? "TV" : "MOV"}
+            </span>
+            <span className="text-delay-amber font-[family-name:var(--font-mono)] text-xs">
+              ✓ DONE
+            </span>
             <button
               onClick={() => onRemove(item.id)}
-              className="absolute top-2 right-2 w-7 h-7 bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/80"
-              title="Remove from watched"
+              className="text-steel-dark hover:text-cancelled-red transition-colors text-xs font-[family-name:var(--font-board)] opacity-0 group-hover:opacity-100"
+              title="Remove"
             >
-              <span className="text-white text-sm">×</span>
+              X
             </button>
           </div>
         ))}

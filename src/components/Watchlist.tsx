@@ -46,10 +46,12 @@ export default function Watchlist({ items, onRemove }: WatchlistProps) {
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-16">
-        <p className="text-[#737373] text-lg mb-2">Your watchlist is empty</p>
-        <p className="text-[#525252] text-sm">
-          Search for a TV show or movie above to get started
+      <div className="board-frame p-8 text-center">
+        <p className="text-steel-dark text-sm uppercase tracking-wider font-[family-name:var(--font-board)]">
+          No booked departures
+        </p>
+        <p className="text-steel-dark/60 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] mt-2">
+          Search above to book your first departure
         </p>
       </div>
     );
@@ -57,16 +59,17 @@ export default function Watchlist({ items, onRemove }: WatchlistProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-2">
-        <div className="flex gap-2">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div className="flex gap-0 border border-ruled">
           {(["all", "tv", "movie"] as FilterType[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilterType(f)}
-              className={`px-3 py-1 rounded-full text-sm transition-colors ${
+              className={`px-4 py-2 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-medium transition-colors border-r border-ruled last:border-r-0 ${
                 filterType === f
-                  ? "bg-[#3b82f6] text-white"
-                  : "bg-[#262626] text-[#737373] hover:text-white"
+                  ? "bg-delay-amber/10 text-delay-amber border-b-2 border-b-delay-amber"
+                  : "text-steel-frame hover:text-flap-white hover:bg-flap-shadow border-b-2 border-b-transparent"
               }`}
             >
               {f === "all" ? "All" : f === "tv" ? "TV" : "Movies"}
@@ -74,45 +77,63 @@ export default function Watchlist({ items, onRemove }: WatchlistProps) {
           ))}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <ShareButton items={items} />
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="bg-[#1a1a1a] border border-[#262626] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#3b82f6]"
+            className="bg-flap-black border border-ruled text-flap-white px-3 py-2 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] focus:outline-none focus:border-delay-amber transition-colors cursor-pointer"
           >
-            <option value="recent">Recently Added</option>
+            <option value="recent">Recent</option>
             <option value="title-asc">Title A-Z</option>
             <option value="title-desc">Title Z-A</option>
-            <option value="longest">Longest First</option>
-            <option value="shortest">Shortest First</option>
+            <option value="longest">Longest</option>
+            <option value="shortest">Shortest</option>
           </select>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {displayed.map((item) => (
+      {/* Board — departure rows */}
+      <div className="board-frame">
+        {/* Column headers */}
+        <div className="departure-row text-[10px] uppercase tracking-[0.2em] text-steel-dark font-[family-name:var(--font-board)] bg-board-surface border-b border-ruled">
+          <span>Time</span>
+          <span>Destination</span>
+          <span>Type</span>
+          <span>Rating</span>
+          <span></span>
+        </div>
+
+        {displayed.map((item, index) => (
           <div
             key={item.id}
-            className="group relative bg-[#1a1a1a] rounded-xl overflow-hidden border border-[#262626] hover:border-[#3b82f6]/50 transition-colors"
+            className={`departure-row group ${index % 2 === 1 ? "bg-row-alt" : ""}`}
           >
-            <img
-              src={getImageUrl(item.posterPath, "w342")}
-              alt={item.title}
-              className="w-full aspect-[2/3] object-cover"
-            />
-            <div className="p-3">
-              <p className="text-white text-sm font-medium truncate">{item.title}</p>
-              <p className="text-[#3b82f6] text-sm font-semibold">
-                {formatRuntime(item.totalRuntimeMinutes)}
-              </p>
+            <span className="text-delay-amber font-[family-name:var(--font-mono)] text-xs font-medium">
+              {formatRuntime(item.totalRuntimeMinutes)}
+            </span>
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src={getImageUrl(item.posterPath, "w45")}
+                alt={item.title}
+                className="w-6 h-9 object-cover flex-shrink-0 border border-ruled"
+              />
+              <span className="text-flap-white uppercase tracking-wider font-[family-name:var(--font-board)] font-medium text-sm truncate">
+                {item.title}
+              </span>
             </div>
+            <span className="text-steel-dark text-xs uppercase font-[family-name:var(--font-board)]">
+              {item.type === "tv" ? "TV" : "MOV"}
+            </span>
+            <span className="text-steel-frame font-[family-name:var(--font-mono)] text-xs">
+              {item.rating ? `★ ${item.rating.toFixed(1)}` : "—"}
+            </span>
             <button
               onClick={() => onRemove(item.id)}
-              className="absolute top-2 right-2 w-7 h-7 bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/80"
-              title="Remove from watchlist"
+              className="text-steel-dark hover:text-cancelled-red transition-colors text-xs font-[family-name:var(--font-board)] opacity-0 group-hover:opacity-100"
+              title="Remove"
             >
-              <span className="text-white text-sm">×</span>
+              X
             </button>
           </div>
         ))}

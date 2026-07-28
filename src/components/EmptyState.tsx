@@ -7,32 +7,45 @@ interface EmptyStateProps {
 export default function EmptyState({ type }: EmptyStateProps) {
   const states = {
     watchlist: {
-      title: "Your watchlist is empty",
-      description:
-        "Search for a show or movie above, then add it to your watchlist",
+      rows: ["NO", "BOOKED", "DEPARTURES"],
+      description: "Search above to book your first departure",
     },
     watched: {
-      title: "Nothing watched yet",
-      description:
-        "Start tracking your shows and movies to see your stats here",
+      rows: ["NOTHING", "COMPLETED", "YET"],
+      description: "Start marking shows as complete to see your stats",
     },
     "no-results": {
-      title: "No results found",
+      rows: ["NO", "MATCHES", "FOUND"],
       description: "Try a different search term",
     },
     "no-filter-results": {
-      title: "Nothing matches your filters",
-      description:
-        "Try increasing your time budget or adding more streaming services",
+      rows: ["NO", "DEPARTURES", "MATCH"],
+      description: "Try increasing your time budget or adding more platforms",
     },
   };
 
   const state = states[type];
 
   return (
-    <div className="text-center py-16">
-      <p className="text-[#737373] text-lg mb-2">{state.title}</p>
-      <p className="text-[#525252] text-sm">{state.description}</p>
+    <div className="board-frame p-8 text-center">
+      <div className="flex gap-[2px] justify-center mb-4">
+        {state.rows.map((word, wi) => (
+          <span key={wi} className="flex gap-[2px]">
+            {word.split("").map((char, ci) => (
+              <span
+                key={ci}
+                className="flap-char text-lg w-7 h-9"
+              >
+                {char}
+              </span>
+            ))}
+            {wi < state.rows.length - 1 && <span className="w-3" />}
+          </span>
+        ))}
+      </div>
+      <p className="text-steel-dark text-xs uppercase tracking-wider font-[family-name:var(--font-board)]">
+        {state.description}
+      </p>
     </div>
   );
 }

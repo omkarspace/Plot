@@ -71,111 +71,111 @@ export default function KnowledgeBase() {
   };
 
   return (
-    <div className="border border-[#262626] rounded-2xl bg-[#0a0a0a] overflow-hidden">
+    <div className="border border-ruled bg-flap-black">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-[#141414] transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-flap-shadow transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#10b981]/20 flex items-center justify-center">
-            <span className="text-[#10b981] text-sm font-bold">KB</span>
+          <div className="flex gap-[2px]">
+            {"DATA".split("").map((char) => (
+              <span key={char} className="flap-char text-xs w-5 h-6">{char}</span>
+            ))}
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-white text-sm">Knowledge Base</h3>
-            <p className="text-[#737373] text-xs">
-              {status ? `${status.totalShows} shows, ${status.totalChunks} chunks` : "Not loaded"}
+            <h3 className="font-semibold text-flap-white text-xs uppercase tracking-wider font-[family-name:var(--font-board)]">
+              Knowledge Base
+            </h3>
+            <p className="text-steel-dark text-[10px] font-[family-name:var(--font-mono)]">
+              {status ? `${status.totalShows} shows, ${status.totalChunks} vectors` : "Not loaded"}
             </p>
           </div>
         </div>
-        <svg
-          className={`w-5 h-5 text-[#737373] transition-transform ${isExpanded ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <span className={`text-steel-dark text-xs transition-transform ${isExpanded ? "rotate-90" : ""}`}>
+          →
+        </span>
       </button>
 
       {isExpanded && status && (
-        <div className="border-t border-[#262626] p-4 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[#141414] rounded-lg p-3">
-              <p className="text-[#737373] text-[10px] uppercase tracking-wider">Status</p>
-              <p className={`text-sm font-semibold mt-0.5 ${status.seeded ? "text-[#10b981]" : "text-[#eab308]"}`}>
-                {status.seeded ? "Active" : "Empty"}
-              </p>
+        <div className="border-t border-ruled p-4 space-y-4">
+          {/* Stats — ruled grid */}
+          <div className="grid grid-cols-3 gap-0 border border-ruled">
+            <div className="px-3 py-3 border-r border-ruled">
+              <span className="text-[9px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block">
+                Status
+              </span>
+              <span className={`text-sm font-bold font-[family-name:var(--font-mono)] block mt-1 ${status.seeded ? "text-delay-amber" : "text-steel-dark"}`}>
+                {status.seeded ? "ACTIVE" : "EMPTY"}
+              </span>
             </div>
-            <div className="bg-[#141414] rounded-lg p-3">
-              <p className="text-[#737373] text-[10px] uppercase tracking-wider">Shows</p>
-              <p className="text-sm font-semibold text-white mt-0.5">{status.totalShows}</p>
+            <div className="px-3 py-3 border-r border-ruled">
+              <span className="text-[9px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block">
+                Shows
+              </span>
+              <span className="text-sm font-bold text-flap-white font-[family-name:var(--font-mono)] block mt-1">
+                {status.totalShows}
+              </span>
             </div>
-            <div className="bg-[#141414] rounded-lg p-3">
-              <p className="text-[#737373] text-[10px] uppercase tracking-wider">Vectors</p>
-              <p className="text-sm font-semibold text-white mt-0.5">{status.totalChunks}</p>
+            <div className="px-3 py-3">
+              <span className="text-[9px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block">
+                Vectors
+              </span>
+              <span className="text-sm font-bold text-flap-white font-[family-name:var(--font-mono)] block mt-1">
+                {status.totalChunks}
+              </span>
             </div>
           </div>
 
+          {/* Embedded Shows */}
           {status.shows.length > 0 && (
             <div>
-              <p className="text-[#737373] text-[10px] uppercase tracking-wider mb-2">Embedded Shows</p>
-              <div className="flex flex-wrap gap-1">
+              <span className="text-[9px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block mb-2">
+                Embedded Shows
+              </span>
+              <div className="flex flex-wrap gap-0 border border-ruled">
                 {status.shows.map((show) => (
                   <span
                     key={show.id}
-                    className="text-[11px] bg-[#141414] text-[#a3a3a3] px-2 py-1 rounded-md border border-[#262626]"
+                    className="text-[10px] uppercase tracking-wider bg-flap-shadow text-steel-frame px-3 py-1.5 border-r border-ruled last:border-r-0 font-[family-name:var(--font-board)]"
                   >
                     {show.title}
-                    <span className="text-[#525252] ml-1">({show.type})</span>
+                    <span className="text-steel-dark ml-1">({show.type})</span>
                   </span>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="flex gap-2">
+          {/* Actions */}
+          <div className="flex gap-0">
             <button
               onClick={handleSeed}
               disabled={isSeeding}
-              className="flex-1 px-4 py-2.5 bg-[#10b981] text-white text-sm font-medium rounded-xl hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-delay-amber text-flap-black text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-semibold hover:bg-delay-amber/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-r border-flap-black"
             >
-              {isSeeding ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Seeding...
-                </span>
-              ) : (
-                "Seed Demo Data"
-              )}
+              {isSeeding ? "Seeding..." : "Seed Demo Data"}
             </button>
             <button
               onClick={handleEmbedWatchlist}
               disabled={isEmbeddingWatchlist}
-              className="flex-1 px-4 py-2.5 bg-[#3b82f6] text-white text-sm font-medium rounded-xl hover:bg-[#2563eb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 border border-delay-amber text-delay-amber text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-semibold hover:bg-delay-amber/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isEmbeddingWatchlist ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Embedding...
-                </span>
-              ) : (
-                "Embed My Watchlist"
-              )}
+              {isEmbeddingWatchlist ? "Embedding..." : "Embed Watchlist"}
             </button>
           </div>
 
           <button
             onClick={refreshStatus}
-            className="w-full px-4 py-2 border border-[#262626] text-[#a3a3a3] text-sm rounded-xl hover:border-[#404040] transition-colors"
+            className="w-full px-4 py-2 border border-ruled text-steel-dark text-xs uppercase tracking-wider font-[family-name:var(--font-board)] hover:text-flap-white hover:border-steel-dark transition-colors"
           >
             Refresh Status
           </button>
 
           {seedResult && (
-            <p className="text-xs text-[#737373] text-center">{seedResult}</p>
+            <p className="text-[10px] text-steel-dark text-center font-[family-name:var(--font-mono)]">{seedResult}</p>
           )}
           {embedResult && (
-            <p className="text-xs text-[#3b82f6] text-center">{embedResult}</p>
+            <p className="text-[10px] text-delay-amber text-center font-[family-name:var(--font-mono)]">{embedResult}</p>
           )}
         </div>
       )}

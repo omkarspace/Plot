@@ -16,6 +16,7 @@ interface ShowDetailProps {
   progress?: ShowProgress;
   onAdvanceEpisode?: () => void;
   onResetProgress?: () => void;
+  onClose?: () => void;
 }
 
 export default function ShowDetail({
@@ -28,6 +29,7 @@ export default function ShowDetail({
   progress,
   onAdvanceEpisode = () => {},
   onResetProgress = () => {},
+  onClose = () => {},
 }: ShowDetailProps) {
   const [added, setAdded] = useState(false);
   const [showSeasons, setShowSeasons] = useState(false);
@@ -46,78 +48,114 @@ export default function ShowDetail({
 
   const runtimeDisplay =
     show.type === "tv"
-      ? `${show.seasons} seasons · ${show.episodes} episodes · ${show.episodeRuntime || "?"}min each`
+      ? `${show.seasons} seasons · ${show.episodes} eps · ${show.episodeRuntime || "?"}min`
       : formatRuntime(show.totalRuntimeMinutes);
 
   return (
-    <div className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-[#262626]">
+    <div className="bg-flap-black border border-ruled relative">
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 w-8 h-8 bg-flap-shadow border border-ruled flex items-center justify-center hover:bg-flap-black hover:border-steel-dark transition-colors"
+      >
+        <span className="text-steel-frame text-xs font-[family-name:var(--font-board)]">X</span>
+      </button>
+
+      {/* Backdrop */}
       {show.backdropPath && (
-        <div className="relative h-48 md:h-64">
+        <div className="relative h-48 md:h-64 overflow-hidden">
           <img
             src={getImageUrl(show.backdropPath, "w780")}
             alt={show.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-flap-black via-flap-black/60 to-transparent" />
         </div>
       )}
 
-      <div className="p-6 md:p-8">
-        <div className="flex gap-6">
+      {/* Content */}
+      <div className="p-6 md:p-8 -mt-16 relative">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Poster */}
           <img
             src={getImageUrl(show.posterPath, "w342")}
             alt={show.title}
-            className="w-28 md:w-36 rounded-xl shadow-lg flex-shrink-0"
+            className="w-28 md:w-36 flex-shrink-0 mx-auto md:mx-0 border border-ruled"
           />
 
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1">{show.title}</h2>
-            <p className="text-[#737373] mb-3">
-              {show.type === "tv" ? "TV Series" : "Movie"} · {show.year}
-            </p>
-
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-yellow-400 text-lg">★</span>
-              <span className="text-white font-semibold">{show.rating.toFixed(1)}</span>
-              <span className="text-[#737373]">/10</span>
+          {/* Details */}
+          <div className="flex-1 min-w-0 text-center md:text-left">
+            {/* Title as flap characters */}
+            <div className="flex gap-[2px] justify-center md:justify-start mb-3 flex-wrap">
+              {show.title.toUpperCase().slice(0, 20).split("").map((char, i) => (
+                <span
+                  key={i}
+                  className="flap-char text-lg md:text-xl w-7 h-9"
+                >
+                  {char === " " ? "\u00A0" : char}
+                </span>
+              ))}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-              <div className="bg-[#0f0f0f] rounded-lg p-3">
-                <p className="text-[#737373] text-xs uppercase tracking-wide">Runtime</p>
-                <p className="text-white font-semibold">{runtimeDisplay}</p>
-              </div>
-              <div className="bg-[#0f0f0f] rounded-lg p-3">
-                <p className="text-[#737373] text-xs uppercase tracking-wide">Total</p>
-                <p className="text-white font-semibold">{formatDaysHours(show.totalRuntimeMinutes)}</p>
+            <p className="text-steel-dark text-xs uppercase tracking-wider font-[family-name:var(--font-board)] mb-4">
+              {show.type === "tv" ? "TV Series" : "Feature Film"} · {show.year}
+            </p>
+
+            {/* Rating */}
+            <div className="flex items-center gap-2 justify-center md:justify-start mb-5">
+              <span className="text-delay-amber font-[family-name:var(--font-mono)] text-lg font-bold">
+                ★ {show.rating.toFixed(1)}
+              </span>
+              <span className="text-steel-dark text-xs font-[family-name:var(--font-mono)]">/10</span>
+            </div>
+
+            {/* Stats — ruled rows */}
+            <div className="border border-ruled mb-5">
+              <div className="flex border-b border-ruled">
+                <div className="flex-1 px-4 py-3 border-r border-ruled">
+                  <span className="text-[10px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block">
+                    Runtime
+                  </span>
+                  <span className="text-flap-white text-sm font-[family-name:var(--font-mono)] font-medium">
+                    {runtimeDisplay}
+                  </span>
+                </div>
+                <div className="flex-1 px-4 py-3">
+                  <span className="text-[10px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block">
+                    Total
+                  </span>
+                  <span className="text-flap-white text-sm font-[family-name:var(--font-mono)] font-medium">
+                    {formatDaysHours(show.totalRuntimeMinutes)}
+                  </span>
+                </div>
               </div>
               {show.type === "tv" && bingeTime && (
-                <div className="bg-[#0f0f0f] rounded-lg p-3 col-span-2 md:col-span-3">
-                  <p className="text-[#737373] text-xs uppercase tracking-wide mb-2">
-                    Binge Speed
-                  </p>
-                  <p className="text-white font-semibold text-sm mb-3">
-                    {episodesPerDay} ep/day — {bingeTime.days} days ({bingeTime.hours}h total)
-                  </p>
+                <div className="px-4 py-3">
+                  <span className="text-[10px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block mb-2">
+                    Binge Speed — {episodesPerDay} ep/day
+                  </span>
+                  <span className="text-delay-amber text-sm font-[family-name:var(--font-mono)] font-bold block mb-3">
+                    {bingeTime.days} days ({bingeTime.hours}h total)
+                  </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-[#737373] text-xs whitespace-nowrap">1 ep/day</span>
+                    <span className="text-steel-dark text-[10px] font-[family-name:var(--font-mono)]">1</span>
                     <input
                       type="range"
                       min={1}
                       max={10}
                       value={episodesPerDay}
                       onChange={(e) => setEpisodesPerDay(Number(e.target.value))}
-                      className="flex-1 h-1.5 bg-[#262626] rounded-full appearance-none cursor-pointer accent-[#3b82f6]"
+                      className="flex-1"
                     />
-                    <span className="text-[#737373] text-xs whitespace-nowrap">10 ep/day</span>
+                    <span className="text-steel-dark text-[10px] font-[family-name:var(--font-mono)]">10</span>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Progress Tracking - TV shows only */}
+            {/* Progress Tracking */}
             {show.type === "tv" && show.seasons && show.episodes && (
-              <div className="mb-4">
+              <div className="mb-5">
                 <ProgressTracker
                   progress={progress}
                   totalSeasons={show.seasons}
@@ -128,27 +166,29 @@ export default function ShowDetail({
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2 mb-4">
+            {/* Genres — as flap tags */}
+            <div className="flex flex-wrap gap-1 mb-5 justify-center md:justify-start">
               {show.genres.map((genre) => (
                 <span
                   key={genre}
-                  className="px-3 py-1 bg-[#262626] rounded-full text-sm text-[#d4d4d4]"
+                  className="px-2 py-1 bg-flap-shadow border border-ruled text-[10px] uppercase tracking-wider text-steel-frame font-[family-name:var(--font-board)]"
                 >
                   {genre}
                 </span>
               ))}
             </div>
 
+            {/* Streaming Providers */}
             {show.streamingProviders.length > 0 && (
-              <div className="mb-4">
-                <p className="text-[#737373] text-xs uppercase tracking-wide mb-2">
-                  Stream on
-                </p>
-                <div className="flex flex-wrap gap-2">
+              <div className="mb-5">
+                <span className="text-[10px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)] block mb-2">
+                  Stream On
+                </span>
+                <div className="flex flex-wrap gap-1 justify-center md:justify-start">
                   {show.streamingProviders.map((provider) => (
                     <span
                       key={provider.name}
-                      className="px-3 py-1.5 bg-[#3b82f6]/20 text-[#3b82f6] rounded-lg text-sm font-medium"
+                      className="px-3 py-1.5 bg-delay-amber/10 text-delay-amber text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-medium border border-delay-amber/20"
                     >
                       {provider.name}
                     </span>
@@ -157,38 +197,44 @@ export default function ShowDetail({
               </div>
             )}
 
+            {/* Season Breakdown */}
             {show.type === "tv" && show.seasonDetails && show.seasonDetails.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-5">
                 <button
                   onClick={() => setShowSeasons(!showSeasons)}
-                  className="text-[#737373] text-xs uppercase tracking-wide hover:text-white transition-colors"
+                  className="text-steel-dark text-xs uppercase tracking-wider font-[family-name:var(--font-board)] hover:text-delay-amber transition-colors flex items-center gap-2 mx-auto md:mx-0"
                 >
-                  {showSeasons ? "Hide Season Breakdown" : "Show Season Breakdown"} {showSeasons ? "▲" : "▼"}
+                  {showSeasons ? "Hide" : "Show"} Season Breakdown
+                  <span className={`transition-transform ${showSeasons ? "rotate-90" : ""}`}>→</span>
                 </button>
                 <div
-                  className="overflow-hidden transition-all duration-300 ease-in-out"
-                  style={{ maxHeight: showSeasons ? `${show.seasonDetails.length * 48 + 16}px` : "0" }}
+                  className="overflow-hidden transition-all duration-300 ease-out"
+                  style={{ maxHeight: showSeasons ? `${show.seasonDetails.length * 40 + 40}px` : "0" }}
                 >
-                  <div className="mt-3 bg-[#0f0f0f] rounded-xl overflow-hidden">
-                    <div className="hidden md:grid grid-cols-[80px_1fr_100px_80px] gap-2 px-4 py-2 border-b border-[#262626]">
-                      <span className="text-[#737373] text-xs uppercase">Season</span>
-                      <span className="text-[#737373] text-xs uppercase">Name</span>
-                      <span className="text-[#737373] text-xs uppercase">Episodes</span>
-                      <span className="text-[#737373] text-xs uppercase">Year</span>
+                  <div className="mt-3 border border-ruled">
+                    <div className="grid grid-cols-[60px_1fr_70px_50px] gap-0 px-3 py-2 border-b border-ruled bg-board-surface text-[10px] uppercase tracking-wider text-steel-dark font-[family-name:var(--font-board)]">
+                      <span>Season</span>
+                      <span>Name</span>
+                      <span>Eps</span>
+                      <span>Year</span>
                     </div>
                     {show.seasonDetails.map((season, i) => (
                       <div
                         key={season.seasonNumber}
-                        className={`grid md:grid-cols-[80px_1fr_100px_80px] grid-cols-[60px_1fr_80px] gap-2 px-4 py-2.5 ${
-                          i % 2 === 0 ? "bg-[#0f0f0f]" : "bg-[#1a1a1a]"
-                        } ${i !== show.seasonDetails!.length - 1 ? "border-b border-[#262626]" : ""}`}
+                        className={`grid grid-cols-[60px_1fr_70px_50px] gap-0 px-3 py-2 ${
+                          i !== show.seasonDetails!.length - 1 ? "border-b border-ruled" : ""
+                        } ${i % 2 === 1 ? "bg-row-alt" : ""}`}
                       >
-                        <span className="text-white text-sm font-medium">
-                          <span className="md:hidden">S</span>{season.seasonNumber}
+                        <span className="text-flap-white text-sm font-[family-name:var(--font-mono)]">
+                          S{String(season.seasonNumber).padStart(2, "0")}
                         </span>
-                        <span className="text-white text-sm truncate">{season.name}</span>
-                        <span className="text-[#a3a3a3] text-sm">{season.episodeCount} eps</span>
-                        <span className="hidden md:inline text-[#737373] text-sm">
+                        <span className="text-flap-white text-sm uppercase font-[family-name:var(--font-board)] truncate">
+                          {season.name}
+                        </span>
+                        <span className="text-steel-frame text-sm font-[family-name:var(--font-mono)]">
+                          {season.episodeCount}
+                        </span>
+                        <span className="text-steel-dark text-sm font-[family-name:var(--font-mono)]">
                           {season.airDate ? season.airDate.split("-")[0] : "—"}
                         </span>
                       </div>
@@ -198,42 +244,44 @@ export default function ShowDetail({
               </div>
             )}
 
+            {/* Overview */}
             {show.overview && (
-              <p className="text-[#a3a3a3] text-sm leading-relaxed mb-4 line-clamp-3">
+              <p className="text-steel-frame text-sm leading-relaxed mb-5 line-clamp-3 font-[family-name:var(--font-board)]">
                 {show.overview}
               </p>
             )}
 
-            <div className="flex flex-wrap gap-3">
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
               {isInWatchlist ? (
                 <button
                   onClick={() => onRemove(show.id)}
-                  className="px-6 py-3 rounded-xl font-semibold transition-all bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                  className="px-6 py-3 bg-cancelled-red/10 text-cancelled-red border border-cancelled-red/30 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-semibold hover:bg-cancelled-red/20 transition-colors"
                 >
-                  Remove from Watchlist
+                  Remove Booking
                 </button>
               ) : (
                 <button
                   onClick={handleAdd}
                   disabled={added}
-                  className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                  className={`px-6 py-3 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-semibold transition-colors ${
                     added
-                      ? "bg-green-500/20 text-green-400 cursor-default"
-                      : "bg-[#3b82f6] hover:bg-[#2563eb] text-white"
+                      ? "bg-delay-amber/10 text-delay-amber border border-delay-amber/30 cursor-default"
+                      : "bg-delay-amber text-flap-black hover:bg-delay-amber/90"
                   }`}
                 >
-                  {added ? "✓ Added" : "+ Add to Watchlist"}
+                  {added ? "✓ Booked" : "Book Departure →"}
                 </button>
               )}
               <button
                 onClick={() => onToggleWatched(show)}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                className={`px-6 py-3 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-semibold transition-colors ${
                   isWatched
-                    ? "bg-green-500 text-white"
-                    : "border border-[#404040] text-[#a3a3a3] hover:border-green-500/50 hover:text-green-400"
+                    ? "bg-delay-amber text-flap-black"
+                    : "border border-ruled text-steel-frame hover:border-delay-amber hover:text-delay-amber"
                 }`}
               >
-                {isWatched ? "✓ Watched" : "Mark as Watched"}
+                {isWatched ? "✓ Completed" : "Mark Complete"}
               </button>
             </div>
           </div>

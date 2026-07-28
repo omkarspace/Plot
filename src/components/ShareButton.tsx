@@ -21,14 +21,16 @@ export default function ShareButton({ items }: ShareButtonProps) {
     const totalDays = (totalMinutes / 60 / 24).toFixed(1);
 
     const lines = [
-      "\u{1F4CB} My Plot Watchlist",
+      "PLOT — DEPARTURE BOARD",
+      "━━━━━━━━━━━━━━━━━━━━━━",
       "",
       ...items.map(
         (item) =>
-          `\u{1F3AC} ${item.title} (${item.type === "tv" ? "TV" : "Movie"}) — ${formatRuntime(item.totalRuntimeMinutes)}`
+          `${formatRuntime(item.totalRuntimeMinutes).padEnd(8)} ${item.title.toUpperCase().padEnd(24)} ${item.type === "tv" ? "TV" : "MOV"}`
       ),
       "",
-      `Total: ${totalFormatted} (${totalDays} days)`,
+      "━━━━━━━━━━━━━━━━━━━━━━",
+      `TOTAL: ${totalFormatted} (${totalDays} days)`,
     ];
 
     await navigator.clipboard.writeText(lines.join("\n"));
@@ -40,13 +42,13 @@ export default function ShareButton({ items }: ShareButtonProps) {
   return (
     <button
       onClick={handleCopy}
-      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+      className={`px-4 py-2 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-medium transition-colors ${
         copied
-          ? "bg-green-600 text-white"
-          : "bg-[#262626] text-[#737373] hover:bg-[#3b82f6] hover:text-white"
+          ? "bg-delay-amber text-flap-black"
+          : "border border-ruled text-steel-frame hover:border-delay-amber hover:text-delay-amber"
       }`}
     >
-      {copied ? "Copied!" : "\u{1F4E4} Share"}
+      {copied ? "Copied!" : "Share"}
     </button>
   );
 }

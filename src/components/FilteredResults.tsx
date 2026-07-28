@@ -1,6 +1,5 @@
 "use client";
 
-import { getImageUrl } from "@/lib/tmdb";
 import { formatRuntime } from "@/lib/time";
 import type { WatchlistItem, DiscoveryItem } from "@/types";
 
@@ -21,17 +20,24 @@ export default function FilteredResults({
 }: FilteredResultsProps) {
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="board-frame">
+        <div className="departure-row text-[10px] uppercase tracking-[0.2em] text-steel-dark font-[family-name:var(--font-board)] bg-board-surface border-b border-ruled">
+          <span>Time</span>
+          <span>Destination</span>
+          <span>Type</span>
+          <span>Status</span>
+          <span></span>
+        </div>
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="flex items-center gap-4 p-4 rounded-xl border border-[#262626] bg-[#1a1a1a] animate-pulse"
+            className="departure-row animate-pulse"
           >
-            <div className="w-12 h-18 bg-[#262626] rounded-lg flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-[#262626] rounded w-3/4" />
-              <div className="h-3 bg-[#262626] rounded w-1/2" />
-            </div>
+            <div className="h-3 bg-flap-shadow w-12" />
+            <div className="h-3 bg-flap-shadow w-3/4" />
+            <div className="h-3 bg-flap-shadow w-12" />
+            <div className="h-3 bg-flap-shadow w-16" />
+            <div />
           </div>
         ))}
       </div>
@@ -42,88 +48,88 @@ export default function FilteredResults({
 
   if (totalItems === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-[#737373] text-lg mb-2">No matches found</p>
-        <p className="text-[#525252] text-sm">
-          Try selecting different services or moods
+      <div className="board-frame p-8 text-center">
+        <p className="text-steel-dark text-sm uppercase tracking-wider font-[family-name:var(--font-board)]">
+          No departures match your schedule
+        </p>
+        <p className="text-steel-dark/60 text-xs uppercase tracking-wider font-[family-name:var(--font-board)] mt-2">
+          Try adjusting your time or platforms
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {/* Watchlist items first */}
+    <div className="board-frame">
+      {/* Column headers */}
+      <div className="departure-row text-[10px] uppercase tracking-[0.2em] text-steel-dark font-[family-name:var(--font-board)] bg-board-surface border-b border-ruled">
+        <span>Time</span>
+        <span>Destination</span>
+        <span>Type</span>
+        <span>Status</span>
+        <span></span>
+      </div>
+
+      {/* Watchlist items */}
       {watchlistItems.map((item) => {
         const fitsInTime = timeMaxMinutes === Infinity || item.totalRuntimeMinutes <= timeMaxMinutes;
         return (
-          <div
+          <button
             key={`wl-${item.id}`}
-            className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
-              fitsInTime
-                ? "bg-[#1a1a1a] border-[#262626] hover:border-[#3b82f6]/50"
-                : "bg-[#1a1a1a]/50 border-[#262626]/50 opacity-60"
-            }`}
             onClick={() => onSelect(item.id, item.type)}
+            className={`w-full departure-row transition-colors ${
+              fitsInTime
+                ? "hover:bg-flap-shadow"
+                : "opacity-50 hover:bg-flap-shadow"
+            }`}
           >
-            <img
-              src={getImageUrl(item.posterPath, "w92")}
-              alt={item.title}
-              className="w-12 h-18 object-cover rounded-lg flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-medium truncate">{item.title}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[#737373] text-sm">
-                  {formatRuntime(item.totalRuntimeMinutes)}
-                </span>
-                <span className="px-1.5 py-0.5 bg-[#262626] rounded text-xs text-[#737373]">
-                  {item.type === "tv" ? "TV" : "Movie"}
-                </span>
-                <span className="px-1.5 py-0.5 bg-[#3b82f6]/20 text-[#3b82f6] rounded text-xs">
-                  In watchlist
-                </span>
-                {fitsInTime && (
-                  <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">
-                    Fits your time
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+            <span className="text-steel-frame font-[family-name:var(--font-mono)] text-xs">
+              {formatRuntime(item.totalRuntimeMinutes)}
+            </span>
+            <span className="text-flap-white uppercase tracking-wider font-[family-name:var(--font-board)] font-medium text-sm truncate text-left">
+              {item.title}
+            </span>
+            <span className="text-steel-dark text-xs uppercase font-[family-name:var(--font-board)]">
+              {item.type === "tv" ? "TV" : "MOV"}
+            </span>
+            <span className={fitsInTime ? "status-on-time" : "status-over-time"}>
+              {fitsInTime ? "ON TIME" : "DELAYED"}
+            </span>
+            <span className="text-steel-dark text-xs">→</span>
+          </button>
         );
       })}
 
-      {/* Discovery results from TMDB */}
+      {/* Divider */}
       {discoveryItems.length > 0 && watchlistItems.length > 0 && (
-        <div className="py-2 text-center">
-          <p className="text-[#525252] text-xs uppercase tracking-wide">More from TMDB</p>
+        <div className="px-4 py-2 border-b border-ruled bg-board-surface">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-steel-dark font-[family-name:var(--font-board)]">
+            More Departures
+          </span>
         </div>
       )}
+
+      {/* Discovery results */}
       {discoveryItems.map((item) => (
-        <div
+        <button
           key={`disc-${item.id}`}
-          className="flex items-center gap-4 p-4 rounded-xl border bg-[#1a1a1a] border-[#262626] hover:border-[#3b82f6]/50 transition-all cursor-pointer"
           onClick={() => onSelect(item.id, item.type)}
+          className="w-full departure-row hover:bg-flap-shadow transition-colors"
         >
-          <img
-            src={getImageUrl(item.posterPath, "w92")}
-            alt={item.title}
-            className="w-12 h-18 object-cover rounded-lg flex-shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-medium truncate">{item.title}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[#737373] text-sm">{item.year}</span>
-              <span className="px-1.5 py-0.5 bg-[#262626] rounded text-xs text-[#737373]">
-                {item.type === "tv" ? "TV" : "Movie"}
-              </span>
-              {item.rating > 0 && (
-                <span className="text-yellow-400 text-xs">★ {item.rating.toFixed(1)}</span>
-              )}
-            </div>
-          </div>
-        </div>
+          <span className="text-steel-frame font-[family-name:var(--font-mono)] text-xs">
+            {item.year}
+          </span>
+          <span className="text-flap-white uppercase tracking-wider font-[family-name:var(--font-board)] font-medium text-sm truncate text-left">
+            {item.title}
+          </span>
+          <span className="text-steel-dark text-xs uppercase font-[family-name:var(--font-board)]">
+            {item.type === "tv" ? "TV" : "MOV"}
+          </span>
+          <span className={item.rating > 7 ? "status-on-time" : "text-steel-dark font-[family-name:var(--font-mono)] text-xs"}>
+            {item.rating > 0 ? item.rating.toFixed(1) : "—"}
+          </span>
+          <span className="text-steel-dark text-xs">→</span>
+        </button>
       ))}
     </div>
   );

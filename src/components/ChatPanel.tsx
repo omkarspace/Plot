@@ -29,11 +29,11 @@ function escapeHtml(str: string): string {
 function renderMarkdown(text: string): string {
   const safe = escapeHtml(text);
   return safe
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-flap-white font-semibold">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code class="bg-[#262626] px-1.5 py-0.5 rounded text-xs text-[#e4e4e7]">$1</code>')
-    .replace(/^• (.+)$/gm, '<div class="flex gap-2 ml-1"><span class="text-[#3b82f6]">•</span><span>$1</span></div>')
-    .replace(/^(\d+)\. (.+)$/gm, '<div class="flex gap-2 ml-1"><span class="text-[#3b82f6] font-semibold">$1.</span><span>$2</span></div>')
+    .replace(/`(.+?)`/g, '<code class="bg-flap-shadow px-1 py-0.5 text-flap-white border border-ruled font-[family-name:var(--font-mono)] text-[11px]">$1</code>')
+    .replace(/^• (.+)$/gm, '<div class="flex gap-2 ml-1"><span class="text-delay-amber">•</span><span>$1</span></div>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div class="flex gap-2 ml-1"><span class="text-delay-amber font-semibold">$1.</span><span>$2</span></div>')
     .replace(/\n\n/g, '</p><p class="mt-2">')
     .replace(/\n/g, '<br/>');
 }
@@ -100,7 +100,6 @@ export default function ChatPanel() {
       const contentType = response.headers.get("content-type") || "";
 
       if (contentType.includes("text/event-stream")) {
-        // Streaming response
         const reader = response.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
@@ -124,7 +123,6 @@ export default function ChatPanel() {
                 sources = event.searchResults;
               } else if (event.type === "chunk") {
                 fullContent += event.content;
-                // Update the assistant message in-place for streaming
                 setMessages((prev) => {
                   const existing = prev.find((m) => m.id === assistantId);
                   if (existing) {
@@ -145,7 +143,6 @@ export default function ChatPanel() {
           }
         }
 
-        // Ensure final message is set
         setMessages((prev) => {
           const existing = prev.find((m) => m.id === assistantId);
           if (existing) {
@@ -156,7 +153,6 @@ export default function ChatPanel() {
           return [...prev, { role: "assistant", content: fullContent, sources, id: assistantId }];
         });
       } else {
-        // JSON response (non-streaming fallback)
         const data = await response.json();
         setMessages((prev) => [
           ...prev,
@@ -194,67 +190,72 @@ export default function ChatPanel() {
   const statusIndicator = useMemo(() => {
     switch (ollamaStatus) {
       case "checking":
-        return <span className="w-2 h-2 bg-[#eab308] rounded-full animate-pulse" />;
+        return <span className="w-2 h-2 bg-delay-amber rounded-full animate-pulse" />;
       case "connected":
-        return <span className="w-2 h-2 bg-[#10b981] rounded-full" />;
+        return <span className="w-2 h-2 bg-delay-amber rounded-full" />;
       case "unavailable":
-        return <span className="w-2 h-2 bg-[#737373] rounded-full" />;
+        return <span className="w-2 h-2 bg-steel-dark rounded-full" />;
     }
   }, [ollamaStatus]);
 
   const statusText = useMemo(() => {
     switch (ollamaStatus) {
-      case "checking": return "Checking LLM...";
+      case "checking": return "Checking...";
       case "connected": return "Ollama connected";
-      case "unavailable": return "Template mode (no LLM)";
+      case "unavailable": return "Template mode";
     }
   }, [ollamaStatus]);
 
   return (
-    <div className="border border-[#262626] rounded-2xl bg-[#0a0a0a] overflow-hidden">
+    <div className="border border-ruled bg-flap-black">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-[#141414] transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-flap-shadow transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#3b82f6]/20 flex items-center justify-center">
-            <span className="text-[#3b82f6] text-sm font-bold">AI</span>
+          <div className="flex gap-[2px]">
+            {"INFO".split("").map((char) => (
+              <span key={char} className="flap-char text-xs w-5 h-6">{char}</span>
+            ))}
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-white text-sm">Ask Plot</h3>
+            <h3 className="font-semibold text-flap-white text-xs uppercase tracking-wider font-[family-name:var(--font-board)]">
+              Station Info
+            </h3>
             <div className="flex items-center gap-2">
               {statusIndicator}
-              <p className="text-[#737373] text-xs">{statusText}</p>
+              <p className="text-steel-dark text-[10px] font-[family-name:var(--font-mono)]">{statusText}</p>
             </div>
           </div>
         </div>
-        <svg
-          className={`w-5 h-5 text-[#737373] transition-transform ${isExpanded ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <span className={`text-steel-dark text-xs transition-transform ${isExpanded ? "rotate-90" : ""}`}>
+          →
+        </span>
       </button>
 
       {isExpanded && (
-        <div className="border-t border-[#262626]">
-          <div className="h-96 overflow-y-auto p-4 space-y-4">
+        <div className="border-t border-ruled">
+          <div className="h-80 overflow-y-auto p-4 space-y-3">
             {showSuggestions && (
               <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="w-12 h-12 rounded-2xl bg-[#3b82f6]/10 flex items-center justify-center mb-4">
-                  <span className="text-[#3b82f6] text-xl font-bold">P</span>
+                <div className="flex gap-[2px] mb-4">
+                  {"PLOT".split("").map((char) => (
+                    <span key={char} className="flap-char text-xl w-8 h-10">{char}</span>
+                  ))}
                 </div>
-                <p className="text-[#737373] text-sm mb-1">What are you in the mood for?</p>
-                <p className="text-[#525252] text-xs mb-6">I&apos;ll search the knowledge base for the best matches</p>
-                <div className="flex flex-wrap gap-2 justify-center max-w-md">
+                <p className="text-steel-dark text-xs uppercase tracking-wider font-[family-name:var(--font-board)] mb-1">
+                  What&apos;s your departure?
+                </p>
+                <p className="text-steel-dark/60 text-[10px] uppercase tracking-wider font-[family-name:var(--font-board)] mb-5">
+                  Ask the station for recommendations
+                </p>
+                <div className="flex flex-wrap gap-0 justify-center max-w-md border border-ruled">
                   {SUGGESTED_PROMPTS.map((prompt) => (
                     <button
                       key={prompt}
                       onClick={() => handleSend(prompt)}
                       disabled={isLoading}
-                      className="px-3 py-1.5 bg-[#141414] border border-[#262626] rounded-lg text-xs text-[#a3a3a3] hover:border-[#3b82f6]/50 hover:text-[#3b82f6] transition-colors"
+                      className="px-3 py-2 text-[10px] uppercase tracking-wider text-steel-frame hover:text-delay-amber hover:bg-flap-shadow transition-colors border-r border-ruled last:border-r-0 font-[family-name:var(--font-board)]"
                     >
                       {prompt}
                     </button>
@@ -266,31 +267,33 @@ export default function ChatPanel() {
             {!showSuggestions && messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[85%] px-4 py-3 ${
                     msg.role === "user"
-                      ? "bg-[#3b82f6] text-white"
-                      : "bg-[#141414] text-[#d4d4d4] border border-[#262626]"
+                      ? "bg-delay-amber/10 border border-delay-amber/30 text-flap-white"
+                      : "bg-flap-shadow border border-ruled text-steel-frame"
                   }`}
                 >
                   {msg.role === "assistant" ? (
                     <div
-                      className="text-sm leading-relaxed [&_strong]:text-white [&_strong]:font-semibold [&_em]:italic [&_code]:bg-[#262626] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs"
+                      className="text-sm leading-relaxed font-[family-name:var(--font-board)] [&_strong]:text-flap-white [&_strong]:font-semibold [&_em]:italic"
                       dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                     />
                   ) : (
-                    <p className="text-sm">{msg.content}</p>
+                    <p className="text-sm uppercase tracking-wider font-[family-name:var(--font-board)]">{msg.content}</p>
                   )}
                   {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-[#262626]">
-                      <p className="text-[10px] text-[#525252] uppercase tracking-wider mb-1">Sources</p>
+                    <div className="mt-2 pt-2 border-t border-ruled">
+                      <p className="text-[9px] text-steel-dark uppercase tracking-wider font-[family-name:var(--font-board)] mb-1">
+                        Sources
+                      </p>
                       <div className="flex flex-wrap gap-1">
                         {msg.sources.slice(0, 4).map((s, j) => (
                           <span
                             key={j}
-                            className="text-[11px] bg-[#1a1a1a] text-[#737373] px-2 py-0.5 rounded-md border border-[#262626]"
+                            className="text-[10px] bg-flap-black text-steel-dark px-2 py-0.5 border border-ruled font-[family-name:var(--font-mono)]"
                           >
                             {s.chunk.metadata.title}
-                            <span className="text-[#525252] ml-1">{(s.score * 100).toFixed(0)}%</span>
+                            <span className="ml-1">{(s.score * 100).toFixed(0)}%</span>
                           </span>
                         ))}
                       </div>
@@ -301,14 +304,22 @@ export default function ChatPanel() {
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex justify-start">
-                <div className="bg-[#141414] border border-[#262626] rounded-2xl px-4 py-3">
+                <div className="bg-flap-shadow border border-ruled px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <div className="flex gap-[2px]">
+                      {". . .".split(" ").map((char, i) => (
+                        <span
+                          key={i}
+                          className="flap-char w-4 h-5 text-[10px] animate-pulse"
+                          style={{ animationDelay: `${i * 200}ms` }}
+                        >
+                          {char}
+                        </span>
+                      ))}
                     </div>
-                    <span className="text-xs text-[#525252]">Searching...</span>
+                    <span className="text-[10px] text-steel-dark font-[family-name:var(--font-board)] uppercase tracking-wider">
+                      Scanning
+                    </span>
                   </div>
                 </div>
               </div>
@@ -316,24 +327,24 @@ export default function ChatPanel() {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-4 border-t border-[#262626]">
-            <div className="flex gap-2">
+          <div className="p-4 border-t border-ruled">
+            <div className="flex gap-0">
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about shows, get recommendations..."
-                className="flex-1 bg-[#141414] border border-[#262626] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#525252] focus:outline-none focus:border-[#3b82f6]/50 transition-colors"
+                placeholder="ASK THE STATION"
+                className="flex-1 bg-flap-black border border-ruled px-4 py-3 text-xs uppercase tracking-wider text-flap-white placeholder-steel-dark focus:outline-none focus:border-delay-amber transition-colors font-[family-name:var(--font-board)]"
                 disabled={isLoading}
               />
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isLoading}
-                className="px-4 py-2.5 bg-[#3b82f6] text-white text-sm font-medium rounded-xl hover:bg-[#2563eb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-3 bg-delay-amber text-flap-black text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-semibold hover:bg-delay-amber/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Send
+                Send →
               </button>
             </div>
           </div>

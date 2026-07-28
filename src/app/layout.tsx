@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Barlow_Condensed, IBM_Plex_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const barlow = Barlow_Condensed({
+  subsets: ["latin"],
+  variable: "--font-board",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const ibmPlex = IBM_Plex_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Plot — Stop Scrolling. Start Watching.",
+  title: "Plot — Departure Board for Your Evening",
   description: "The smartest way to pick what to watch. Filter by time, streaming service, and mood.",
 };
 
@@ -16,36 +28,47 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.className} bg-[#0f0f0f] text-white min-h-screen`} suppressHydrationWarning>
-        <nav className="sticky top-0 z-50 bg-[#0f0f0f]/80 backdrop-blur-xl border-b border-[#262626]">
-          <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <Link href="/" className="font-bold text-lg text-white hover:text-[#3b82f6] transition-colors">
-              Plot
+    <html lang="en" className={`${barlow.variable} ${ibmPlex.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen" suppressHydrationWarning>
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-flap-black border-b border-ruled">
+          <div className="max-w-[1100px] mx-auto px-4 h-14 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="flex gap-[2px]">
+                {"PLOT".split("").map((char) => (
+                  <span
+                    key={char}
+                    className="flap-char text-lg w-7 h-9 group-hover:text-delay-amber transition-colors duration-150"
+                  >
+                    {char}
+                  </span>
+                ))}
+              </div>
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
               <Link
                 href="/"
-                className="text-sm text-[#737373] hover:text-white transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-steel-frame hover:text-flap-white uppercase tracking-wider transition-colors font-[family-name:var(--font-board)]"
               >
-                Home
+                Departures
               </Link>
               <Link
                 href="/search"
-                className="text-sm text-[#737373] hover:text-white transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-steel-frame hover:text-flap-white uppercase tracking-wider transition-colors font-[family-name:var(--font-board)]"
               >
                 Search
               </Link>
               <Link
                 href="/debug"
-                className="text-sm text-[#737373] hover:text-white transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-steel-frame hover:text-flap-white uppercase tracking-wider transition-colors font-[family-name:var(--font-board)]"
               >
                 Debug
               </Link>
             </div>
           </div>
         </nav>
-        {children}
+        <main className="pt-14">
+          {children}
+        </main>
       </body>
     </html>
   );
