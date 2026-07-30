@@ -41,9 +41,11 @@ npm install
 
 Create `.env.local` in the project root:
 
+```bash
+TMDB_API_KEY=your_tmdb_api_key_here
 ```
-NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key_here
-```
+
+> **Security Note:** Use `TMDB_API_KEY` (not `NEXT_PUBLIC_TMDB_API_KEY`). The API key should be server-side only to prevent exposure in client-side bundles.
 
 ### 4. Run the dev server
 
@@ -61,7 +63,7 @@ ollama pull llama3.2
 ```
 
 Set in `.env.local`:
-```
+```bash
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 ```
@@ -102,7 +104,15 @@ npm run test     # Run tests (Jest)
 │   │   ├── layout.tsx              # Root layout with nav
 │   │   ├── page.tsx                # Home page
 │   │   ├── search/page.tsx         # Semantic + TMDB search
-│   │   └── globals.css
+│   │   ├── globals.css
+│   │   └── api/rag/
+│   │       ├── search/route.ts     # Semantic search endpoint
+│   │       ├── chat/route.ts       # RAG chat endpoint
+│   │       ├── seed/route.ts       # Knowledge base seeding
+│   │       ├── status/route.ts     # KB status check
+│   │       ├── ollama/route.ts     # Ollama connection check
+│   │       ├── generate/route.ts   # LLM generation endpoint
+│   │       └── embed-watchlist/route.ts # Embed user watchlist
 │   ├── components/
 │   │   ├── SearchBar.tsx           # TMDB search + autocomplete
 │   │   ├── ShowDetail.tsx          # Show/movie detail panel
@@ -136,14 +146,7 @@ npm run test     # Run tests (Jest)
 │   ├── types/
 │   │   ├── index.ts                # Core app types
 │   │   └── rag.ts                  # RAG-specific types
-│   └── app/api/rag/
-│       ├── search/route.ts         # Semantic search endpoint
-│       ├── chat/route.ts           # RAG chat endpoint
-│       ├── seed/route.ts           # Knowledge base seeding
-│       ├── status/route.ts         # KB status check
-│       ├── ollama/route.ts         # Ollama connection check
-│       ├── generate/route.ts       # LLM generation endpoint
-│       └── embed-watchlist/route.ts # Embed user watchlist
+│   └── ...
 ├── jest.config.ts
 ├── next.config.ts
 ├── package.json
@@ -183,17 +186,139 @@ The vector store is in-memory (no database required). Each show is chunked into:
 
 The knowledge base ships with 30 pre-seeded popular shows and movies. Users can also embed their own watchlist.
 
-## Deploy
+### TMDB Integration
 
-Deploy to [Vercel](https://vercel.com):
+All TMDB API calls are made server-side via Next.js API routes to keep the API key secure. The client never sees the API key.
+
+### Streaming Providers
+
+Provider data is fetched from TMDB's `/watch/providers` endpoint. Currently filtered to US region (configurable via `TMDB_REGION` env var).
+
+## Security
+
+### API Key Protection
+
+The TMDB API key is **never** exposed to the client. It's stored as `TMDB_API_KEY` in server environment variables and only used in server-side API routes.
+
+> **Do not** use `NEXT_PUBLIC_TMDB_API_KEY` — this would bundle the key into client-side JavaScript.
+
+### Rate Limiting
+
+API routes should be protected with rate limiting in production. Recommended:
+- **Vercel:** Use Vercel Edge Middleware with rate limiting
+- **Self-hosted:** Add middleware using `next-rate-limit` or Upstash Redis
+
+### Input Validation
+
+All API endpoints validate and sanitize inputs:
+- Query length limits (max 500 characters for RAG queries)
+- Type checking on all request bodies
+- Error responses don't leak internal details
+
+## Performance
+
+### Caching Strategy
+
+| Layer | What's Cached | TTL |
+|-------|---------------|-----|
+| TMDB API | Search results, show details, provider data | 1 hour (configurable) |
+| Embeddings | Vector embeddings for seeded content | Persistent (localStorage) |
+| Vector Store | In-memory (per-process) | Until cold start |
+
+### Known Limitations
+
+1. **In-memory vector store** — Resets on each serverless function cold start. On Vercel, the seed endpoint runs on each cold start to rebuild the knowledge base.
+2. **No persistent vector DB** — For production, consider PostgreSQL + pgvector, Pinecone, or Upstash Vector.
+3. **Embedding model size** — `@huggingface/transformers` loads ~50MB on first use. Consider lazy loading for initial page load performance.
+
+## Deployment
+
+### Vercel (Recommended)
 
 1. Push to GitHub
 2. Import on Vercel
-3. Add `NEXT_PUBLIC_TMDB_API_KEY` as an environment variable
-4. Deploy
+3. Add `TMDB_API_KEY` as an environment variable
+4. (Optional) Add `OLLAMA_URL` and `OLLAMA_MODEL`
+5. Deploy
 
-> **Note:** The RAG system's vector store resets on each serverless function invocation on Vercel. For persistent RAG, the seed endpoint runs on each cold start.
+> **Note:** The RAG system's vector store resets on each serverless function invocation on Vercel. The seed endpoint runs on each cold start to rebuild the knowledge base. For persistent RAG, see "Production Hardening" below.
+
+### Docker
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+```bash
+docker build -t plot .
+docker run -p 3000:3000 -e TMDB_API_KEY=xxx plot
+```
+
+### Production Hardening Checklist
+
+See [SYSTEM_REVIEW.md](./SYSTEM_REVIEW.md) for a comprehensive audit.
+
+| Priority | Item | Status |
+|----------|------|--------|
+| Critical | Remove `NEXT_PUBLIC_` from TMDB key | ✅ Fixed |
+| Critical | Add rate limiting to API routes | ⬜ TODO |
+| Critical | Input validation on all endpoints | ⬜ TODO |
+| High | Persistent vector store (PostgreSQL + pgvector) | ⬜ TODO |
+| High | Add Redis for caching + rate limiting | ⬜ TODO |
+| High | Fix N+1 TMDB queries for seasons | ⬜ TODO |
+| Medium | Add React error boundaries | ⬜ TODO |
+| Medium | Replace `<img>` with `next/image` | ⬜ TODO |
+| Medium | Add structured error handling | ⬜ TODO |
+| Low | Add service worker for offline support | ⬜ TODO |
+| Low | Add accessibility (ARIA, keyboard nav) | ⬜ TODO |
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `TMDB_API_KEY` | Yes | TMDB API key (server-side only) |
+| `OLLAMA_URL` | No | Ollama server URL (default: http://localhost:11434) |
+| `OLLAMA_MODEL` | No | Ollama model name (default: llama3.2) |
+| `TMDB_REGION` | No | Region for streaming providers (default: US) |
+| `RAG_MAX_QUERY_LENGTH` | No | Max characters for RAG queries (default: 500) |
+| `RAG_TOP_K` | No | Number of results to retrieve (default: 5) |
+
+## Testing
+
+```bash
+npm run test        # Run all tests
+npm run test:watch  # Watch mode
+npm run test:coverage # Coverage report
+```
+
+Tests cover:
+- Vector store operations (add, search, similarity)
+- Text chunking logic
+- Embedding cache behavior
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run `npm run lint` and `npm run test`
+5. Submit a PR
 
 ## License
 
 MIT
+
+---
+
+## Further Reading
+
+- [SYSTEM_REVIEW.md](./SYSTEM_REVIEW.md) — Comprehensive architecture review with critical issues
+- [PRODUCT.md](./PRODUCT.md) — Product requirements and design decisions
+- [DESIGN.md](./DESIGN.md) — Design system and UI specifications
