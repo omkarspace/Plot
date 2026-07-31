@@ -78,8 +78,8 @@ export default function KnowledgeBase() {
       >
         <div className="flex items-center gap-3">
           <div className="flex gap-[2px]">
-            {"DATA".split("").map((char) => (
-              <span key={char} className="flap-char text-xs w-5 h-6">{char}</span>
+            {"DATA".split("").map((char, i) => (
+              <span key={i} className="flap-char text-xs w-5 h-6">{char}</span>
             ))}
           </div>
           <div className="text-left">
