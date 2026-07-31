@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import SearchBar from "@/components/SearchBar";
 import SmartFilter from "@/components/SmartFilter";
 import FilteredResults from "@/components/FilteredResults";
@@ -9,7 +10,6 @@ import Watchlist from "@/components/Watchlist";
 import StatsBar from "@/components/StatsBar";
 import ChatPanel from "@/components/ChatPanel";
 import KnowledgeBase from "@/components/KnowledgeBase";
-import { buildShowDetail, buildShowDetailById } from "@/lib/tmdb";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useProgress } from "@/hooks/useProgress";
 import { useSmartFilter } from "@/hooks/useSmartFilter";
@@ -29,11 +29,20 @@ export default function Home() {
   const progress = useProgress();
   const smartFilter = useSmartFilter();
 
+  const fetchShowDetail = async (id: number, type: "tv" | "movie"): Promise<ShowDetailType> => {
+    const response = await fetch(`/api/tmdb/detail?id=${id}&type=${type}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Failed to fetch" }));
+      throw new Error(error.error || "Failed to fetch show details");
+    }
+    return response.json();
+  };
+
   const handleSearchSelect = async (result: TMDBSearchResult) => {
     setIsLoadingDetail(true);
     setDetailError(null);
     try {
-      const detail = await buildShowDetail(result);
+      const detail = await fetchShowDetail(result.id, result.media_type);
       setSelectedShow(detail);
     } catch {
       setDetailError("Failed to load show details. Please try again.");
@@ -94,7 +103,7 @@ export default function Home() {
     setIsLoadingDetail(true);
     setDetailError(null);
     try {
-      const detail = await buildShowDetailById(id, type);
+      const detail = await fetchShowDetail(id, type);
       setSelectedShow(detail);
     } catch {
       setDetailError("Failed to load show details. Please try again.");
@@ -127,51 +136,61 @@ export default function Home() {
         </div>
 
         {/* Search — station information desk */}
-        <div className="mb-8">
-          <SearchBar onSelect={handleSearchSelect} />
-        </div>
+        <ErrorBoundary>
+          <div className="mb-8">
+            <SearchBar onSelect={handleSearchSelect} />
+          </div>
+        </ErrorBoundary>
 
         {/* Smart Filter — board column controls */}
-        <SmartFilter
-          timeBudget={smartFilter.criteria.timeBudget}
-          selectedServices={smartFilter.criteria.services}
-          selectedGenres={smartFilter.criteria.genres}
-          isFilterActive={smartFilter.isFilterActive}
-          isLoading={smartFilter.isLoading}
-          onTimeBudgetChange={smartFilter.setTimeBudget}
-          onServiceToggle={smartFilter.toggleService}
-          onGenreToggle={smartFilter.toggleGenre}
-          onReset={smartFilter.resetFilter}
-          resultCount={resultCount}
-          watchlistCount={watchlist.items.length}
-        />
+        <ErrorBoundary>
+          <SmartFilter
+            timeBudget={smartFilter.criteria.timeBudget}
+            selectedServices={smartFilter.criteria.services}
+            selectedGenres={smartFilter.criteria.genres}
+            isFilterActive={smartFilter.isFilterActive}
+            isLoading={smartFilter.isLoading}
+            onTimeBudgetChange={smartFilter.setTimeBudget}
+            onServiceToggle={smartFilter.toggleService}
+            onGenreToggle={smartFilter.toggleGenre}
+            onReset={smartFilter.resetFilter}
+            resultCount={resultCount}
+            watchlistCount={watchlist.items.length}
+          />
+        </ErrorBoundary>
 
         {/* Filtered Results — departure rows */}
         {smartFilter.isFilterActive && (
-          <div className="mb-10">
-            <FilteredResults
-              watchlistItems={smartFilter.watchlistResults}
-              discoveryItems={smartFilter.discoveryResults}
-              timeMaxMinutes={smartFilter.timeMaxMinutes}
-              onSelect={handleFilterSelect}
-              isLoading={smartFilter.isLoading}
-            />
-          </div>
+          <ErrorBoundary>
+            <div className="mb-10">
+              <FilteredResults
+                watchlistItems={smartFilter.watchlistResults}
+                discoveryItems={smartFilter.discoveryResults}
+                timeMaxMinutes={smartFilter.timeMaxMinutes}
+                onSelect={handleFilterSelect}
+                isLoading={smartFilter.isLoading}
+              />
+            </div>
+          </ErrorBoundary>
         )}
 
         {/* Watchlist — booked departures */}
         {watchlist.items.length > 0 && (
-          <div className="mt-10">
-            <StatsBar totalMinutes={watchlist.totalMinutes} count={watchlist.items.length} />
-            <Watchlist items={watchlist.items} onRemove={handleRemoveFromWatchlist} />
-          </div>
+          <ErrorBoundary>
+            <div className="mt-10">
+              <StatsBar totalMinutes={watchlist.totalMinutes} count={watchlist.items.length} />
+              <Watchlist items={watchlist.items} onRemove={handleRemoveFromWatchlist} />
+            </div>
+          </ErrorBoundary>
         )}
 
         {/* Bottom Section */}
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          <ChatPanel />
-          <KnowledgeBase />
-        </div>
+        <ErrorBoundary>
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <ChatPanel />
+            <KnowledgeBase />
+          </div>
+        </ErrorBoundary>
       </div>
 
       {/* Loading State */}
@@ -179,7 +198,7 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-flap-black/90">
           <div className="flex flex-col items-center gap-4">
             <div className="flex gap-1">
-              {["L","O","A","D","I","N","G"].map((char, i) => (
+              {["L", "O", "A", "D", "I", "N", "G"].map((char, i) => (
                 <span
                   key={i}
                   className="flap-char text-xl w-8 h-10 flap-animate"
@@ -205,26 +224,28 @@ export default function Home() {
 
       {/* Show Detail Modal */}
       {selectedShow && !isLoadingDetail && (
-        <div className="fixed inset-0 z-40 flex items-end md:items-center justify-center">
-          <div
-            className="absolute inset-0 bg-flap-black/90"
-            onClick={() => setSelectedShow(null)}
-          />
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 mb-0 md:mb-0 md:rounded-none">
-            <ShowDetail
-              show={selectedShow}
-              isInWatchlist={watchlist.isInList(selectedShow.id)}
-              isWatched={checkIsWatched(selectedShow.id)}
-              onAdd={handleAddToWatchlist}
-              onRemove={handleRemoveFromWatchlist}
-              onToggleWatched={handleToggleWatched}
-              progress={progress.getForShow(selectedShow.id)}
-              onAdvanceEpisode={handleAdvanceEpisode}
-              onResetProgress={handleResetProgress}
-              onClose={() => setSelectedShow(null)}
+        <ErrorBoundary>
+          <div className="fixed inset-0 z-40 flex items-end md:items-center justify-center">
+            <div
+              className="absolute inset-0 bg-flap-black/90"
+              onClick={() => setSelectedShow(null)}
             />
+            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 mb-0 md:mb-0 md:rounded-none">
+              <ShowDetail
+                show={selectedShow}
+                isInWatchlist={watchlist.isInList(selectedShow.id)}
+                isWatched={checkIsWatched(selectedShow.id)}
+                onAdd={handleAddToWatchlist}
+                onRemove={handleRemoveFromWatchlist}
+                onToggleWatched={handleToggleWatched}
+                progress={progress.getForShow(selectedShow.id)}
+                onAdvanceEpisode={handleAdvanceEpisode}
+                onResetProgress={handleResetProgress}
+                onClose={() => setSelectedShow(null)}
+              />
+            </div>
           </div>
-        </div>
+        </ErrorBoundary>
       )}
     </div>
   );

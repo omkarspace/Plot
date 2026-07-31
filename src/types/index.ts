@@ -196,6 +196,7 @@ export interface DiscoveryItem {
   overview: string;
   rating: number;
   year: string;
+  totalRuntimeMinutes?: number;
 }
 
 export interface ShowProgress {

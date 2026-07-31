@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { getImageUrl } from "@/lib/tmdb";
 import { formatRuntime } from "@/lib/time";
 import type { WatchedItem } from "@/types";
@@ -44,10 +45,12 @@ export default function WatchedSection({ items, onRemove }: WatchedSectionProps)
               {formatRuntime(item.totalRuntimeMinutes)}
             </span>
             <div className="flex items-center gap-3 min-w-0">
-              <img
+              <Image
                 src={getImageUrl(item.posterPath, "w45")}
                 alt={item.title}
-                className="w-6 h-9 object-cover flex-shrink-0 border border-ruled"
+                width={24}
+                height={36}
+                className="flex-shrink-0 border border-ruled"
               />
               <span className="text-flap-white uppercase tracking-wider font-[family-name:var(--font-board)] font-medium text-sm truncate">
                 {item.title}

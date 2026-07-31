@@ -10,7 +10,7 @@ import type {
 } from "@/types";
 import { getServiceById } from "./services";
 
-const API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
+const API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -18,12 +18,22 @@ if (!API_KEY) {
   console.error("Missing TMDB_API_KEY in .env.local");
 }
 
-export const getImageUrl = (path: string | null, size: string = "w342"): string => {
-  if (!path) return "/placeholder-poster.svg";
-  return `${IMAGE_BASE}/${size}${path}`;
-};
+const CACHE_TTL = 60 * 60 * 1000;
+const cache = new Map<string, { data: unknown; expires: number }>();
 
-const fetchTMDB = async <T>(endpoint: string, params: Record<string, string> = {}): Promise<T> => {
+function getCacheKey(endpoint: string, params: Record<string, string>): string {
+  const sortedParams = Object.keys(params).sort().map((k) => `${k}=${params[k]}`).join("&");
+  return `${endpoint}?${sortedParams}`;
+}
+
+async function fetchTMDBWithCache<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+  const cacheKey = getCacheKey(endpoint, params);
+  const cached = cache.get(cacheKey);
+
+  if (cached && Date.now() < cached.expires) {
+    return cached.data as T;
+  }
+
   const url = new URL(`${BASE_URL}${endpoint}`);
   url.searchParams.set("api_key", API_KEY || "");
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
@@ -32,11 +42,19 @@ const fetchTMDB = async <T>(endpoint: string, params: Record<string, string> = {
   if (!response.ok) {
     throw new Error(`TMDB API error: ${response.status}`);
   }
-  return response.json();
+  const data = await response.json();
+
+  cache.set(cacheKey, { data, expires: Date.now() + CACHE_TTL });
+  return data;
+}
+
+export const getImageUrl = (path: string | null, size: string = "w342"): string => {
+  if (!path) return "/placeholder-poster.svg";
+  return `${IMAGE_BASE}/${size}${path}`;
 };
 
 export const searchShows = async (query: string): Promise<TMDBSearchResponse> => {
-  return fetchTMDB<TMDBSearchResponse>("/search/multi", {
+  return fetchTMDBWithCache<TMDBSearchResponse>("/search/multi", {
     query,
     include_adult: "false",
     language: "en-US",
@@ -45,39 +63,68 @@ export const searchShows = async (query: string): Promise<TMDBSearchResponse> =>
 };
 
 export const getTVDetail = async (id: number): Promise<TMDBTVDetail> => {
-  return fetchTMDB<TMDBTVDetail>(`/tv/${id}`, { language: "en-US" });
+  return fetchTMDBWithCache<TMDBTVDetail>(`/tv/${id}`, { language: "en-US" });
 };
 
 export const getMovieDetail = async (id: number): Promise<TMDBMovieDetail> => {
-  return fetchTMDB<TMDBMovieDetail>(`/movie/${id}`, { language: "en-US" });
+  return fetchTMDBWithCache<TMDBMovieDetail>(`/movie/${id}`, { language: "en-US" });
 };
 
 export const getWatchProviders = async (id: number, type: "tv" | "movie"): Promise<TMDBWatchProviders> => {
-  return fetchTMDB<TMDBWatchProviders>(`/${type}/${id}/watch/providers`);
+  return fetchTMDBWithCache<TMDBWatchProviders>(`/${type}/${id}/watch/providers`);
 };
 
 export const getSeasonDetail = async (tvId: number, seasonNumber: number) => {
-  return fetchTMDB<{ episodes: { runtime: number | null }[] }>(
+  return fetchTMDBWithCache<{ episodes: { runtime: number | null }[] }>(
     `/tv/${tvId}/season/${seasonNumber}`,
     { language: "en-US" }
   );
 };
 
-const calculateTotalRuntime = async (tvDetail: TMDBTVDetail): Promise<number> => {
+function extractProviders(watchData: TMDBWatchProviders | null | undefined, region: string = "US"): StreamingProvider[] {
+  const providers = watchData?.results?.[region];
+  if (!providers?.flatrate) return [];
+  return providers.flatrate.map((p) => ({
+    name: p.provider_name,
+    logoPath: p.logo_path,
+  }));
+}
+
+const seasonCache = new Map<string, { episodes: { runtime: number | null }[]; expires: number }>();
+const SEASON_CACHE_TTL = 60 * 60 * 1000;
+
+async function getSeasonDetailCached(tvId: number, seasonNumber: number, region: string = "US") {
+  const cacheKey = `season:${tvId}:${seasonNumber}:${region}`;
+  const cached = seasonCache.get(cacheKey);
+  if (cached && Date.now() < cached.expires) {
+    return cached.episodes;
+  }
+
+  const data = await fetchTMDBWithCache<{ episodes: { runtime: number | null }[] }>(
+    `/tv/${tvId}/season/${seasonNumber}`,
+    { language: "en-US" }
+  );
+
+  seasonCache.set(cacheKey, { episodes: data.episodes, expires: Date.now() + SEASON_CACHE_TTL });
+  return data.episodes;
+}
+
+const calculateTotalRuntime = async (tvDetail: TMDBTVDetail, region: string = "US"): Promise<number> => {
   if (tvDetail.episode_run_time && tvDetail.episode_run_time.length > 0) {
     return tvDetail.episode_run_time[0] * tvDetail.number_of_episodes;
   }
 
   const nonSpecialSeasons = tvDetail.seasons.filter((s) => s.season_number > 0);
+  const seasonNumbers = nonSpecialSeasons.map((s) => s.season_number);
 
   const seasonResults = await Promise.allSettled(
-    nonSpecialSeasons.map((season) => getSeasonDetail(tvDetail.id, season.season_number))
+    seasonNumbers.map((seasonNumber) => getSeasonDetailCached(tvDetail.id, seasonNumber, region))
   );
 
   let totalMinutes = 0;
   for (const result of seasonResults) {
     if (result.status === "fulfilled") {
-      for (const episode of result.value.episodes) {
+      for (const episode of result.value) {
         totalMinutes += episode.runtime || 0;
       }
     }
@@ -98,23 +145,16 @@ export const buildShowDetail = async (
 
 export const buildShowDetailById = async (
   id: number,
-  type: "tv" | "movie"
+  type: "tv" | "movie",
+  region: string = "US"
 ): Promise<ShowDetail> => {
   if (type === "tv") {
     const [detail, watchData] = await Promise.all([
       getTVDetail(id),
       getWatchProviders(id, "tv").catch(() => null),
     ]);
-    const totalRuntimeMinutes = await calculateTotalRuntime(detail);
-
-    let providers: StreamingProvider[] = [];
-    const usProviders = watchData?.results?.["US"];
-    if (usProviders?.flatrate) {
-      providers = usProviders.flatrate.map((p) => ({
-        name: p.provider_name,
-        logoPath: p.logo_path,
-      }));
-    }
+    const totalRuntimeMinutes = await calculateTotalRuntime(detail, region);
+    const providers = extractProviders(watchData, region);
 
     const startYear = detail.first_air_date?.split("-")[0] || "Unknown";
     const endYear = detail.last_air_date?.split("-")[0] || "Present";
@@ -161,15 +201,7 @@ export const buildShowDetailById = async (
     const runtime = detail.runtime || 0;
     const totalHours = runtime / 60;
     const totalDays = totalHours / 24;
-
-    let providers: StreamingProvider[] = [];
-    const usProviders = watchData?.results?.["US"];
-    if (usProviders?.flatrate) {
-      providers = usProviders.flatrate.map((p) => ({
-        name: p.provider_name,
-        logoPath: p.logo_path,
-      }));
-    }
+    const providers = extractProviders(watchData, region);
 
     return {
       id: detail.id,
@@ -192,9 +224,6 @@ export const buildShowDetailById = async (
   }
 };
 
-// === TMDB Discover API ===
-
-// Genre ID mapping: mood filter id → TMDB genre IDs (for both TV and movie)
 const MOOD_TO_TV_GENRE: Record<string, string> = {
   action: "10759",
   comedy: "35",
@@ -241,9 +270,9 @@ interface TMDBDiscoverResponse {
 
 export const discoverContent = async (
   serviceIds: string[],
-  moodIds: string[]
+  moodIds: string[],
+  region: string = "US"
 ): Promise<DiscoveryItem[]> => {
-  // Collect all TMDB provider IDs from selected services
   const providerIds = new Set<number>();
   for (const sid of serviceIds) {
     const service = getServiceById(sid);
@@ -256,7 +285,6 @@ export const discoverContent = async (
 
   const providerStr = Array.from(providerIds).join("|");
 
-  // Collect TMDB genre IDs from selected moods
   const tvGenreIds = moodIds
     .map((m) => MOOD_TO_TV_GENRE[m])
     .filter(Boolean)
@@ -268,19 +296,18 @@ export const discoverContent = async (
 
   const results: DiscoveryItem[] = [];
 
-  // Fetch TV shows
   const tvParams: Record<string, string> = {
     sort_by: "popularity.desc",
     language: "en-US",
     page: "1",
   };
   if (providerStr) tvParams.with_watch_providers = providerStr;
-  if (providerStr) tvParams.watch_region = "US";
+  if (providerStr) tvParams.watch_region = region;
   if (providerStr) tvParams.with_watch_monetization_types = "flatrate";
   if (tvGenreIds) tvParams.with_genres = tvGenreIds;
 
   try {
-    const tvData = await fetchTMDB<TMDBDiscoverResponse>("/discover/tv", tvParams);
+    const tvData = await fetchTMDBWithCache<TMDBDiscoverResponse>("/discover/tv", tvParams);
     for (const item of tvData.results.slice(0, 10)) {
       const year = item.first_air_date?.split("-")[0] || "";
       results.push({
@@ -298,19 +325,18 @@ export const discoverContent = async (
     // TV discover failed, continue with movies
   }
 
-  // Fetch movies
   const movieParams: Record<string, string> = {
     sort_by: "popularity.desc",
     language: "en-US",
     page: "1",
   };
   if (providerStr) movieParams.with_watch_providers = providerStr;
-  if (providerStr) movieParams.watch_region = "US";
+  if (providerStr) movieParams.watch_region = region;
   if (providerStr) movieParams.with_watch_monetization_types = "flatrate";
   if (movieGenreIds) movieParams.with_genres = movieGenreIds;
 
   try {
-    const movieData = await fetchTMDB<TMDBDiscoverResponse>("/discover/movie", movieParams);
+    const movieData = await fetchTMDBWithCache<TMDBDiscoverResponse>("/discover/movie", movieParams);
     for (const item of movieData.results.slice(0, 10)) {
       const year = item.release_date?.split("-")[0] || "";
       results.push({

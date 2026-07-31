@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import type { FilterCriteria, TimeBudget, DiscoveryItem } from "@/types";
-import { discoverContent } from "@/lib/tmdb";
 import { getWatchlist, getUserServices, saveUserServices } from "@/lib/localStorage";
 
 const DEFAULT_CRITERIA: FilterCriteria = {
@@ -11,6 +10,11 @@ const DEFAULT_CRITERIA: FilterCriteria = {
   genres: [],
   type: "all",
 };
+
+interface DiscoverAPIResponse {
+  results: DiscoveryItem[];
+  region: string;
+}
 
 /* eslint-disable react-hooks/set-state-in-effect */
 export const useSmartFilter = () => {
@@ -24,7 +28,7 @@ export const useSmartFilter = () => {
     setCriteria((prev) => ({ ...prev, services: savedServices }));
   }, []);
 
-  // When filter changes, fetch from TMDB
+  // When filter changes, fetch from TMDB via API route
   useEffect(() => {
     if (!isFilterActive) return;
 
@@ -33,9 +37,20 @@ export const useSmartFilter = () => {
       if (criteria.services.length === 0 && criteria.genres.length === 0) return;
       setIsLoading(true);
       try {
-        const results = await discoverContent(criteria.services, criteria.genres);
+        const response = await fetch("/api/tmdb/discover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceIds: criteria.services,
+            moodIds: criteria.genres,
+            timeBudget: criteria.timeBudget === "all" ? null : parseInt(criteria.timeBudget) * 60,
+            region: "US",
+          }),
+        });
+        if (!response.ok) throw new Error("Discover failed");
+        const data: DiscoverAPIResponse = await response.json();
         if (!cancelled) {
-          setDiscoveryResults(results);
+          setDiscoveryResults(data.results);
         }
       } catch {
         if (!cancelled) {
@@ -52,7 +67,7 @@ export const useSmartFilter = () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [isFilterActive, criteria.services, criteria.genres]);
+  }, [isFilterActive, criteria.services, criteria.genres, criteria.timeBudget]);
 
   const filteredWatchlist = isFilterActive
     ? getWatchlist().filter((item) => {

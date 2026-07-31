@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { searchShows, getImageUrl } from "@/lib/tmdb";
+import Image from "next/image";
+import { getImageUrl } from "@/lib/tmdb";
 import {
   getSearchHistory,
   addToSearchHistory,
@@ -11,6 +12,10 @@ import type { TMDBSearchResult, SearchHistoryItem } from "@/types";
 
 interface SearchBarProps {
   onSelect: (result: TMDBSearchResult) => void;
+}
+
+interface SearchAPIResponse {
+  results: TMDBSearchResult[];
 }
 
 export default function SearchBar({ onSelect }: SearchBarProps) {
@@ -51,7 +56,9 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const data = await searchShows(value);
+        const response = await fetch(`/api/tmdb/search?q=${encodeURIComponent(value)}`);
+        if (!response.ok) throw new Error("Search failed");
+        const data: SearchAPIResponse = await response.json();
         const filtered = data.results
           .filter((r) => r.media_type === "tv" || r.media_type === "movie")
           .slice(0, 8);
@@ -187,10 +194,12 @@ export default function SearchBar({ onSelect }: SearchBarProps) {
                 onClick={() => handleHistorySelect(item)}
                 className="flex items-center gap-3 px-4 py-3 border-b border-ruled hover:bg-flap-shadow transition-colors flex-shrink-0 group"
               >
-                <img
+                <Image
                   src={getImageUrl(item.posterPath, "w45")}
                   alt={item.title}
-                  className="w-6 h-9 object-cover flex-shrink-0"
+                  width={24}
+                  height={36}
+                  className="flex-shrink-0"
                 />
                 <span className="text-flap-white text-xs uppercase tracking-wider font-[family-name:var(--font-board)] font-medium truncate max-w-[140px] group-hover:text-delay-amber transition-colors">
                   {item.title}

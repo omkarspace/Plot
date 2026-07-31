@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { searchShows, buildShowDetailById, getImageUrl } from "@/lib/tmdb";
 import { isInWatchlist, addToWatchlist, isWatched } from "@/lib/localStorage";
@@ -412,12 +412,14 @@ export default function SearchPage() {
                     {/* Poster */}
                     <button
                       onClick={() => handleSelectResult(result.showId, result.type)}
-                      className="flex-shrink-0 w-20 md:w-24"
+                      className="flex-shrink-0 w-20 md:w-24 relative"
                     >
-                      <img
+                      <Image
                         src={getImageUrl(result.posterPath, "w185")}
                         alt={result.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 80px, 96px"
                       />
                     </button>
 
@@ -536,10 +538,12 @@ export default function SearchPage() {
                     className="group bg-[#0a0a0a] border border-[#262626] rounded-xl overflow-hidden hover:border-[#3b82f6]/50 transition-colors text-left"
                   >
                     <div className="relative aspect-[2/3]">
-                      <img
+                      <Image
                         src={getImageUrl(result.poster_path, "w342")}
                         alt={title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">

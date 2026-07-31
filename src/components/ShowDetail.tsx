@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { getImageUrl } from "@/lib/tmdb";
 import { formatRuntime, formatDaysHours, calculateBingeTime } from "@/lib/time";
 import ProgressTracker from "./ProgressTracker";
@@ -64,10 +65,13 @@ export default function ShowDetail({
       {/* Backdrop */}
       {show.backdropPath && (
         <div className="relative h-48 md:h-64 overflow-hidden">
-          <img
+          <Image
             src={getImageUrl(show.backdropPath, "w780")}
             alt={show.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 780px"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-flap-black via-flap-black/60 to-transparent" />
         </div>
@@ -77,10 +81,12 @@ export default function ShowDetail({
       <div className="p-6 md:p-8 -mt-16 relative">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Poster */}
-          <img
+          <Image
             src={getImageUrl(show.posterPath, "w342")}
             alt={show.title}
-            className="w-28 md:w-36 flex-shrink-0 mx-auto md:mx-0 border border-ruled"
+            width={114}
+            height={171}
+            className="flex-shrink-0 mx-auto md:mx-0 border border-ruled"
           />
 
           {/* Details */}
