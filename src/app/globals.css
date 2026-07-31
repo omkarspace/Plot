@@ -1,79 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-@import "tailwindcss";
-
-@theme inline {
-  --color-flap-black: #0D0D0F;
-  --color-flap-shadow: #1B1B1E;
-  --color-flap-white: #F2F2F2;
-  --color-delay-amber: #FFB400;
-  --color-cancelled-red: #D32F2F;
-  --color-steel-frame: #B6BBC2;
-  --color-steel-dark: #7D838C;
-  --color-board-surface: #141416;
-  --color-row-alt: #18181B;
-  --color-ruled: #2A2A2E;
-  --font-board: 'Barlow Condensed', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  background-color: #0D0D0F;
-  color: #F2F2F2;
-  font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-}
-
-::selection {
-  background: rgba(255, 180, 0, 0.3);
-  color: #F2F2F2;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #0D0D0F;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2A2A2E;
-  border-radius: 0;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #7D838C;
-}
-
-@layer utilities {
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-}
-
 /* Split-flap character */
 .flap-char {
   display: inline-flex;
@@ -89,8 +13,10 @@ body {
   text-transform: uppercase;
   color: #F2F2F2;
   overflow: hidden;
+  perspective: 200px;
 }
 
+.flap-char::before,
 .flap-char::after {
   content: '';
   position: absolute;
@@ -102,7 +28,22 @@ body {
   z-index: 1;
 }
 
-/* Flap flip animation */
+.flap-char::before {
+  transform: translateY(-1px);
+  opacity: 0.5;
+}
+
+.flap-char::after {
+  transform: translateY(1px);
+  opacity: 0.8;
+}
+
+.flap-char > span {
+  position: relative;
+  z-index: 2;
+}
+
+/* Flap flip animation - cascade 50ms per character */
 @keyframes flap-flip-in {
   0% {
     transform: rotateX(-90deg);
@@ -115,9 +56,71 @@ body {
 }
 
 .flap-animate {
-  animation: flap-flip-in 0.15s ease-out forwards;
+  animation: flap-flip-in var(--duration-flap) var(--ease-mechanical) forwards;
   transform-origin: center bottom;
-  perspective: 200px;
+}
+
+/* Cascade delay utility - applies 50ms stagger per character */
+.flap-cascade > *:nth-child(1) { animation-delay: 0ms; }
+.flap-cascade > *:nth-child(2) { animation-delay: 50ms; }
+.flap-cascade > *:nth-child(3) { animation-delay: 100ms; }
+.flap-cascade > *:nth-child(4) { animation-delay: 150ms; }
+.flap-cascade > *:nth-child(5) { animation-delay: 200ms; }
+.flap-cascade > *:nth-child(6) { animation-delay: 250ms; }
+.flap-cascade > *:nth-child(7) { animation-delay: 300ms; }
+.flap-cascade > *:nth-child(8) { animation-delay: 350ms; }
+.flap-cascade > *:nth-child(9) { animation-delay: 400ms; }
+.flap-cascade > *:nth-child(10) { animation-delay: 450ms; }
+.flap-cascade > *:nth-child(11) { animation-delay: 500ms; }
+.flap-cascade > *:nth-child(12) { animation-delay: 550ms; }
+.flap-cascade > *:nth-child(13) { animation-delay: 600ms; }
+.flap-cascade > *:nth-child(14) { animation-delay: 650ms; }
+.flap-cascade > *:nth-child(15) { animation-delay: 700ms; }
+.flap-cascade > *:nth-child(16) { animation-delay: 750ms; }
+.flap-cascade > *:nth-child(17) { animation-delay: 800ms; }
+.flap-cascade > *:nth-child(18) { animation-delay: 850ms; }
+.flap-cascade > *:nth-child(19) { animation-delay: 900ms; }
+.flap-cascade > *:nth-child(20) { animation-delay: 950ms; }
+
+/* Row slide animations */
+@keyframes row-slide-in {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes row-slide-out {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+.row-slide-in {
+  animation: row-slide-in var(--duration-row) var(--ease-mechanical) forwards;
+}
+
+.row-slide-out {
+  animation: row-slide-out var(--duration-row) var(--ease-mechanical) forwards;
+}
+
+/* Status amber pulse */
+@keyframes amber-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.amber-pulse {
+  animation: amber-pulse 2s var(--ease-mechanical) infinite;
 }
 
 /* Departure row */
@@ -128,11 +131,7 @@ body {
   height: 48px;
   border-bottom: 1px solid #2A2A2E;
   padding: 0 16px;
-  transition: background-color 0.15s ease;
-}
-
-.departure-row:hover {
-  background-color: #1B1B1E;
+  transition: background-color 0.15s var(--ease-mechanical);
 }
 
 /* Board frame */
@@ -167,16 +166,6 @@ body {
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-}
-
-/* Amber pulse for active status */
-@keyframes amber-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-.amber-pulse {
-  animation: amber-pulse 2s ease-in-out infinite;
 }
 
 /* Steel brushed texture (CSS only) */
@@ -219,4 +208,62 @@ input[type="range"]::-moz-range-thumb {
   background: #FFB400;
   cursor: pointer;
   border: 2px solid #0D0D0F;
+}
+
+/* Zebra striping for all board tables */
+.board-frame .departure-row:nth-child(even):not(:first-child) {
+  background-color: #18181B;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #FFB400;
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0D0D0F;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2A2E;
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7D838C;
+}
+
+/* Selection */
+::selection {
+  background: rgba(255, 180, 0, 0.3);
+  color: #F2F2F2;
+}
+
+/* Utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

@@ -118,12 +118,12 @@ export default function Home() {
     <div className="min-h-screen relative">
       <div className="max-w-[1100px] mx-auto px-4 py-10 md:py-14">
         {/* Board Header — the split-flap PLOT title */}
-        <div className="mb-10">
+        <div className="mb-10 flap-cascade">
           <div className="flex items-center gap-1 mb-3">
             {"PLOT".split("").map((char, i) => (
               <span
                 key={i}
-                className="flap-char text-4xl md:text-5xl w-12 h-16 md:w-14 md:h-[72px]"
+                className="flap-char text-4xl md:text-5xl w-12 h-16 md:w-14 md:h-[72px] flap-animate"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 {char}

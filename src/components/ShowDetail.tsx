@@ -92,11 +92,12 @@ export default function ShowDetail({
           {/* Details */}
           <div className="flex-1 min-w-0 text-center md:text-left">
             {/* Title as flap characters */}
-            <div className="flex gap-[2px] justify-center md:justify-start mb-3 flex-wrap">
+            <div className="flex gap-[2px] justify-center md:justify-start mb-3 flex-wrap flap-cascade">
               {show.title.toUpperCase().slice(0, 20).split("").map((char, i) => (
                 <span
                   key={i}
-                  className="flap-char text-lg md:text-xl w-7 h-9"
+                  className="flap-char text-lg md:text-xl w-7 h-9 flap-animate"
+                  style={{ animationDelay: `${i * 50}ms` }}
                 >
                   {char === " " ? "\u00A0" : char}
                 </span>

@@ -53,13 +53,6 @@ function saveSemanticHistory(query: string) {
   localStorage.setItem(SEMANTIC_HISTORY_KEY, JSON.stringify(history));
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 0.6) return "bg-[#10b981]";
-  if (score >= 0.4) return "bg-[#3b82f6]";
-  if (score >= 0.25) return "bg-[#eab308]";
-  return "bg-[#737373]";
-}
-
 function getScoreLabel(score: number): string {
   if (score >= 0.6) return "Excellent match";
   if (score >= 0.4) return "Good match";
@@ -187,7 +180,7 @@ export default function SearchPage() {
     }
   };
 
-  const handleAddToWatchlist = (result: AggregatedResult) => {
+  const handleAddToWatchlist = (result: { showId: number; type: "tv" | "movie"; title: string; posterPath: string | null }) => {
     if (isInWatchlist(result.showId)) return;
     addToWatchlist({
       id: result.showId,
@@ -209,47 +202,44 @@ export default function SearchPage() {
   };
 
   return (
-    <main className="min-h-screen px-4 py-8 md:py-12">
+    <main className="min-h-screen px-4 py-8 md:py-12 bg-flap-black">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">Search</h1>
-          <p className="text-[#737373]">
-            Find shows using natural language or search TMDB directly
+        <div className="text-center mb-8 flap-cascade">
+          <h1 className="text-4xl md:text-5xl font-bold mb-2 font-[family-name:var(--font-board)] text-flap-white">
+            <span className="flap-char text-4xl md:text-5xl w-12 h-14 flap-animate" style={{ animationDelay: "0ms" }}>S</span>
+            <span className="flap-char text-4xl md:text-5xl w-12 h-14 flap-animate" style={{ animationDelay: "50ms" }}>E</span>
+            <span className="flap-char text-4xl md:text-5xl w-12 h-14 flap-animate" style={{ animationDelay: "100ms" }}>A</span>
+            <span className="flap-char text-4xl md:text-5xl w-12 h-14 flap-animate" style={{ animationDelay: "150ms" }}>R</span>
+            <span className="flap-char text-4xl md:text-5xl w-12 h-14 flap-animate" style={{ animationDelay: "200ms" }}>C</span>
+            <span className="flap-char text-4xl md:text-5xl w-12 h-14 flap-animate" style={{ animationDelay: "250ms" }}>H</span>
+          </h1>
+          <p className="text-steel-dark text-sm font-[family-name:var(--font-board)] uppercase tracking-wider">
+            Find departures using natural language or search TMDB directly
           </p>
         </div>
 
         {/* Mode Toggle */}
         <div className="flex justify-center mb-6">
-          <div className="inline-flex bg-[#141414] border border-[#262626] rounded-xl p-1">
+          <div className="board-frame inline-flex p-1 steel-texture">
             <button
               onClick={() => handleModeChange("semantic")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded text-sm font-medium transition-all font-[family-name:var(--font-board)] uppercase tracking-wider ${
                 mode === "semantic"
-                  ? "bg-[#3b82f6] text-white"
-                  : "text-[#737373] hover:text-white"
+                  ? "bg-delay-amber text-flap-black"
+                  : "text-steel-frame hover:text-delay-amber"
               }`}
             >
-              <span className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                Semantic
-              </span>
+              Semantic
             </button>
             <button
               onClick={() => handleModeChange("tmdb")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded text-sm font-medium transition-all font-[family-name:var(--font-board)] uppercase tracking-wider ${
                 mode === "tmdb"
-                  ? "bg-[#3b82f6] text-white"
-                  : "text-[#737373] hover:text-white"
+                  ? "bg-delay-amber text-flap-black"
+                  : "text-steel-frame hover:text-delay-amber"
               }`}
             >
-              <span className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                TMDB
-              </span>
+              TMDB
             </button>
           </div>
         </div>
@@ -271,20 +261,20 @@ export default function SearchPage() {
                   ? "Describe what you're in the mood for..."
                   : "Search for a TV show or movie..."
               }
-              className="flex-1 bg-[#141414] border border-[#262626] rounded-xl px-4 py-3 text-white placeholder-[#525252] focus:outline-none focus:border-[#3b82f6]/50 transition-colors"
+              className="flex-1 flap-char bg-flap-shadow border border-ruled rounded-none px-4 py-3 text-flap-white placeholder-steel-dark focus:outline-none focus:border-delay-amber transition-colors font-[family-name:var(--font-board)] text-base"
             />
             {mode === "semantic" && (
               <button
                 onClick={() => handleSemanticSearch(query)}
                 disabled={!query.trim() || isLoading}
-                className="px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-xl hover:bg-[#2563eb] transition-colors disabled:opacity-50"
+                className="px-6 py-3 bg-delay-amber text-flap-black font-medium rounded-none hover:bg-delay-amber/90 transition-colors disabled:opacity-50 font-[family-name:var(--font-board)] uppercase tracking-wider text-sm"
               >
                 {isLoading ? "Searching..." : "Search"}
               </button>
             )}
             {mode === "tmdb" && isLoading && (
               <div className="flex items-center px-4">
-                <div className="w-5 h-5 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-delay-amber border-t-transparent rounded-full animate-spin" />
               </div>
             )}
           </div>
@@ -294,18 +284,18 @@ export default function SearchPage() {
             <div className="mt-2 flex items-center gap-2">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  kbStatus.seeded ? "bg-[#10b981]" : "bg-[#eab308]"
+                  kbStatus.seeded ? "bg-delay-amber" : "bg-delay-amber/50"
                 }`}
               />
-              <span className="text-xs text-[#737373]">
+              <span className="text-xs text-steel-dark font-[family-name:var(--font-board)] uppercase tracking-wider">
                 {kbStatus.seeded
-                  ? `${kbStatus.totalShows} shows in knowledge base`
+                  ? `${kbStatus.totalShows} departures in knowledge base`
                   : "Knowledge base empty — seed it first"}
               </span>
               {!kbStatus.seeded && (
                 <Link
                   href="/"
-                  className="text-xs text-[#3b82f6] hover:underline"
+                  className="text-xs text-delay-amber hover:underline font-[family-name:var(--font-board)]"
                 >
                   Go seed
                 </Link>
@@ -319,7 +309,7 @@ export default function SearchPage() {
           <div className="space-y-6">
             {semanticHistory.length > 0 && (
               <div>
-                <p className="text-[#737373] text-xs uppercase tracking-wider mb-3">
+                <p className="text-steel-dark text-xs uppercase tracking-wider mb-3 font-[family-name:var(--font-board)]">
                   Recent Searches
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -330,7 +320,7 @@ export default function SearchPage() {
                         setQuery(item.query);
                         handleSemanticSearch(item.query);
                       }}
-                      className="px-3 py-1.5 bg-[#141414] border border-[#262626] rounded-lg text-sm text-[#a3a3a3] hover:border-[#3b82f6]/50 hover:text-[#3b82f6] transition-colors"
+                      className="px-3 py-1.5 bg-flap-shadow border border-ruled rounded-none text-sm text-steel-frame hover:border-delay-amber/50 hover:text-delay-amber transition-colors font-[family-name:var(--font-board)]"
                     >
                       {item.query}
                     </button>
@@ -340,7 +330,7 @@ export default function SearchPage() {
             )}
 
             <div>
-              <p className="text-[#737373] text-xs uppercase tracking-wider mb-3">
+              <p className="text-steel-dark text-xs uppercase tracking-wider mb-3 font-[family-name:var(--font-board)]">
                 Try Searching
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -351,9 +341,9 @@ export default function SearchPage() {
                       setQuery(suggestion);
                       handleSemanticSearch(suggestion);
                     }}
-                    className="px-4 py-3 bg-[#141414] border border-[#262626] rounded-xl text-left text-sm text-[#a3a3a3] hover:border-[#3b82f6]/50 hover:text-white transition-colors"
+                    className="px-4 py-3 bg-flap-shadow border border-ruled rounded-none text-left text-sm text-steel-frame hover:border-delay-amber/50 hover:text-flap-white transition-colors font-[family-name:var(--font-board)]"
                   >
-                    <span className="text-[#3b82f6] mr-2">→</span>
+                    <span className="text-delay-amber mr-2">→</span>
                     {suggestion}
                   </button>
                 ))}
@@ -365,7 +355,7 @@ export default function SearchPage() {
         {/* TMDB Mode: Empty State */}
         {mode === "tmdb" && !searched && (
           <div className="text-center py-16">
-            <p className="text-[#525252] text-sm">
+            <p className="text-steel-dark text-sm font-[family-name:var(--font-board)]">
               Start typing to search TMDB&apos;s catalog of movies and TV shows
             </p>
           </div>
@@ -374,8 +364,8 @@ export default function SearchPage() {
         {/* No Results */}
         {searched && !isLoading && mode === "semantic" && aggregatedResults.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-[#737373] text-lg mb-2">No matches found</p>
-            <p className="text-[#525252] text-sm">
+            <p className="text-steel-dark text-lg mb-2 font-[family-name:var(--font-board)]">No matches found</p>
+            <p className="text-steel-frame text-sm">
               Try rephrasing your query or seed more content into the knowledge base
             </p>
           </div>
@@ -383,8 +373,8 @@ export default function SearchPage() {
 
         {searched && !isLoading && mode === "tmdb" && tmdbResults.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-[#737373] text-lg mb-2">No results found</p>
-            <p className="text-[#525252] text-sm">
+            <p className="text-steel-dark text-lg mb-2 font-[family-name:var(--font-board)]">No results found</p>
+            <p className="text-steel-frame text-sm">
               Try a different search term
             </p>
           </div>
@@ -392,23 +382,24 @@ export default function SearchPage() {
 
         {/* Semantic Results */}
         {mode === "semantic" && aggregatedResults.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[#737373] text-sm">
-                {aggregatedResults.length} show{aggregatedResults.length !== 1 ? "s" : ""} matched
-                <span className="text-[#525252] ml-1">
+          <div className="board-frame overflow-hidden">
+            <div className="px-4 py-3 border-b border-ruled bg-board-surface">
+              <p className="text-steel-dark text-sm font-[family-name:var(--font-board)] uppercase tracking-wider">
+                {aggregatedResults.length} departure{aggregatedResults.length !== 1 ? "s" : ""} matched
+                <span className="text-steel-frame ml-1 font-[family-name:var(--font-mono)]">
                   ({semanticResults.length} chunks analyzed)
                 </span>
               </p>
             </div>
 
-            <div className="space-y-3">
-              {aggregatedResults.map((result) => (
+            <div className="divide-y divide-ruled">
+              {aggregatedResults.map((result, index) => (
                 <div
                   key={result.showId}
-                  className="border border-[#262626] rounded-xl bg-[#0a0a0a] hover:border-[#404040] transition-all overflow-hidden"
+                  className={`departure-row group row-slide-in ${index % 2 === 1 ? "bg-row-alt" : ""}`}
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
-                  <div className="flex items-stretch">
+                  <div className="flex items-stretch w-full">
                     {/* Poster */}
                     <button
                       onClick={() => handleSelectResult(result.showId, result.type)}
@@ -427,20 +418,20 @@ export default function SearchPage() {
                     <div className="flex-1 p-4 min-w-0">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flap-cascade">
                             <button
                               onClick={() => handleSelectResult(result.showId, result.type)}
-                              className="font-semibold text-white hover:text-[#3b82f6] transition-colors truncate"
+                              className="font-semibold text-flap-white hover:text-delay-amber transition-colors truncate font-[family-name:var(--font-board)]"
                             >
                               {result.title}
                             </button>
-                            <span className="text-xs bg-[#1a1a1a] text-[#a3a3a3] px-2 py-0.5 rounded flex-shrink-0">
+                            <span className="text-xs bg-flap-shadow text-steel-frame px-2 py-0.5 rounded-none flex-shrink-0 font-[family-name:var(--font-board)] uppercase tracking-wider">
                               {result.type === "tv" ? "TV" : "Movie"}
                             </span>
                           </div>
 
                           {/* Best matching chunk */}
-                          <p className="text-[#737373] text-sm line-clamp-2 mb-2">
+                          <p className="text-steel-frame text-sm line-clamp-2 mb-2 font-[family-name:var(--font-board)]">
                             {result.chunks[0]?.content || ""}
                           </p>
 
@@ -450,7 +441,7 @@ export default function SearchPage() {
                               {result.chunks.map((chunk, ci) => (
                                 <span
                                   key={ci}
-                                  className="text-[10px] bg-[#141414] text-[#525252] px-1.5 py-0.5 rounded"
+                                  className="text-[10px] bg-flap-shadow text-steel-dark px-1.5 py-0.5 rounded-none font-[family-name:var(--font-board)] uppercase"
                                 >
                                   {chunk.field}
                                 </span>
@@ -461,26 +452,34 @@ export default function SearchPage() {
 
                         {/* Score */}
                         <div className="flex-shrink-0 text-right">
-                          <div className={`text-lg font-bold ${
+                          <div className={`text-lg font-bold font-[family-name:var(--font-mono)] ${
                             result.bestScore >= 0.6
-                              ? "text-[#10b981]"
+                              ? "text-delay-amber"
                               : result.bestScore >= 0.4
-                              ? "text-[#3b82f6]"
+                              ? "text-delay-amber"
                               : result.bestScore >= 0.25
-                              ? "text-[#eab308]"
-                              : "text-[#737373]"
+                              ? "text-delay-amber"
+                              : "text-steel-dark"
                           }`}>
                             {(result.bestScore * 100).toFixed(0)}%
                           </div>
-                          <p className="text-[10px] text-[#525252]">{getScoreLabel(result.bestScore)}</p>
+                          <p className="text-[10px] text-steel-dark font-[family-name:var(--font-mono)]">{getScoreLabel(result.bestScore)}</p>
                         </div>
                       </div>
 
                       {/* Score bar */}
                       <div className="mt-2 mb-3">
-                        <div className="h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+                        <div className="h-1 bg-flap-shadow rounded-none overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${getScoreColor(result.bestScore)}`}
+                            className={`h-full rounded-none transition-all ${
+                              result.bestScore >= 0.6
+                                ? "bg-delay-amber"
+                                : result.bestScore >= 0.4
+                                ? "bg-delay-amber"
+                                : result.bestScore >= 0.25
+                                ? "bg-delay-amber"
+                                : "bg-steel-dark"
+                            }`}
                             style={{ width: `${Math.min(result.bestScore * 100, 100)}%` }}
                           />
                         </div>
@@ -490,24 +489,24 @@ export default function SearchPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSelectResult(result.showId, result.type)}
-                          className="px-3 py-1.5 bg-[#1a1a1a] border border-[#262626] rounded-lg text-xs text-[#a3a3a3] hover:border-[#3b82f6]/50 hover:text-white transition-colors"
+                          className="px-3 py-1.5 bg-flap-shadow border border-ruled rounded-none text-xs text-steel-frame hover:border-delay-amber/50 hover:text-flap-white transition-colors font-[family-name:var(--font-board)] uppercase tracking-wider"
                         >
                           View Details
                         </button>
                         {isInWatchlist(result.showId) ? (
-                          <span className="px-3 py-1.5 bg-[#3b82f6]/20 text-[#3b82f6] rounded-lg text-xs font-medium">
+                          <span className="px-3 py-1.5 bg-delay-amber/10 text-delay-amber rounded-none text-xs font-medium font-[family-name:var(--font-board)] uppercase tracking-wider border border-delay-amber/20">
                             In Watchlist
                           </span>
                         ) : (
                           <button
                             onClick={() => handleAddToWatchlist(result)}
-                            className="px-3 py-1.5 bg-[#3b82f6] text-white rounded-lg text-xs font-medium hover:bg-[#2563eb] transition-colors"
+                            className="px-3 py-1.5 bg-delay-amber text-flap-black rounded-none text-xs font-medium hover:bg-delay-amber/90 transition-colors font-[family-name:var(--font-board)] uppercase tracking-wider"
                           >
                             + Add to Watchlist
                           </button>
                         )}
                         {isWatched(result.showId) && (
-                          <span className="px-3 py-1.5 bg-[#10b981]/20 text-[#10b981] rounded-lg text-xs font-medium">
+                          <span className="px-3 py-1.5 bg-delay-amber/10 text-delay-amber rounded-none text-xs font-medium font-[family-name:var(--font-board)] uppercase tracking-wider border border-delay-amber/20">
                             ✓ Watched
                           </span>
                         )}
@@ -522,57 +521,83 @@ export default function SearchPage() {
 
         {/* TMDB Results */}
         {mode === "tmdb" && tmdbResults.length > 0 && (
-          <div>
-            <p className="text-[#737373] text-sm mb-4">
-              {tmdbResults.length} result{tmdbResults.length !== 1 ? "s" : ""} from TMDB
-            </p>
+          <div className="board-frame overflow-hidden">
+            <div className="px-4 py-3 border-b border-ruled bg-board-surface">
+              <p className="text-steel-dark text-sm font-[family-name:var(--font-board)] uppercase tracking-wider">
+                {tmdbResults.length} result{tmdbResults.length !== 1 ? "s" : ""} from TMDB
+              </p>
+            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {tmdbResults.map((result) => {
+            <div className="divide-y divide-ruled">
+              {tmdbResults.map((result, index) => {
                 const title = result.title || result.name || "Unknown";
                 const year = (result.release_date || result.first_air_date || "").split("-")[0];
                 return (
-                  <button
+                  <div
                     key={result.id}
-                    onClick={() => handleSelectResult(result.id, result.media_type)}
-                    className="group bg-[#0a0a0a] border border-[#262626] rounded-xl overflow-hidden hover:border-[#3b82f6]/50 transition-colors text-left"
+                    className={`departure-row group row-slide-in ${index % 2 === 1 ? "bg-row-alt" : ""}`}
+                    style={{ animationDelay: `${index * 30}ms` }}
                   >
-                    <div className="relative aspect-[2/3]">
-                      <Image
-                        src={getImageUrl(result.poster_path, "w342")}
-                        alt={title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex gap-2">
+                    <div className="flex items-stretch w-full">
+                      <button
+                        onClick={() => handleSelectResult(result.id, result.media_type)}
+                        className="flex-shrink-0 w-20 md:w-24 relative"
+                      >
+                        <Image
+                          src={getImageUrl(result.poster_path, "w185")}
+                          alt={title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 80px, 96px"
+                        />
+                      </button>
+
+                      <div className="flex-1 p-4 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <button
+                                onClick={() => handleSelectResult(result.id, result.media_type)}
+                                className="font-semibold text-flap-white hover:text-delay-amber transition-colors truncate font-[family-name:var(--font-board)]"
+                              >
+                                {title}
+                              </button>
+                              <span className="text-xs bg-flap-shadow text-steel-frame px-2 py-0.5 rounded-none flex-shrink-0 font-[family-name:var(--font-board)] uppercase tracking-wider">
+                                {result.media_type === "tv" ? "TV" : "Movie"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-steel-frame text-sm font-[family-name:var(--font-board)]">
+                              {year && <span>{year}</span>}
+                              {result.vote_average > 0 && (
+                                <span className="text-delay-amber">★ {result.vote_average.toFixed(1)}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-3">
                           {isInWatchlist(result.id) ? (
-                            <span className="px-2 py-1 bg-[#3b82f6]/20 text-[#3b82f6] rounded text-xs font-medium">
+                            <span className="px-3 py-1.5 bg-delay-amber/10 text-delay-amber rounded-none text-xs font-medium font-[family-name:var(--font-board)] uppercase tracking-wider border border-delay-amber/20">
                               In Watchlist
                             </span>
                           ) : (
-                            <span className="px-2 py-1 bg-[#3b82f6] text-white rounded text-xs font-medium">
-                              + Add
-                            </span>
+                            <button
+                              onClick={() => handleAddToWatchlist({
+                                showId: result.id,
+                                title,
+                                posterPath: result.poster_path,
+                                type: result.media_type,
+                              })}
+                              className="px-3 py-1.5 bg-delay-amber text-flap-black rounded-none text-xs font-medium hover:bg-delay-amber/90 transition-colors font-[family-name:var(--font-board)] uppercase tracking-wider"
+                            >
+                              + Add to Watchlist
+                            </button>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="p-3">
-                      <p className="text-white text-sm font-medium truncate">{title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[#737373] text-xs">{year}</span>
-                        <span className="text-xs bg-[#1a1a1a] text-[#a3a3a3] px-1.5 py-0.5 rounded">
-                          {result.media_type === "tv" ? "TV" : "Movie"}
-                        </span>
-                        {result.vote_average > 0 && (
-                          <span className="text-yellow-400 text-xs">★ {result.vote_average.toFixed(1)}</span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -581,24 +606,34 @@ export default function SearchPage() {
 
         {/* Loading skeleton */}
         {isLoading && (
-          <div className="space-y-3 mt-6">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex gap-4 p-4 rounded-xl border border-[#262626] bg-[#0a0a0a] animate-pulse"
-              >
-                <div className="w-20 h-28 bg-[#262626] rounded-lg flex-shrink-0" />
-                <div className="flex-1 space-y-3">
-                  <div className="h-4 bg-[#262626] rounded w-1/3" />
-                  <div className="h-3 bg-[#262626] rounded w-2/3" />
-                  <div className="h-1 bg-[#262626] rounded-full w-full" />
-                  <div className="flex gap-2">
-                    <div className="h-6 bg-[#262626] rounded-lg w-24" />
-                    <div className="h-6 bg-[#262626] rounded-lg w-28" />
+          <div className="board-frame overflow-hidden">
+            <div className="px-4 py-3 border-b border-ruled bg-board-surface">
+              <p className="text-steel-dark text-sm font-[family-name:var(--font-board)] uppercase tracking-wider">
+                Searching departures...
+              </p>
+            </div>
+            <div className="divide-y divide-ruled">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="departure-row animate-pulse"
+                >
+                  <div className="flex items-stretch w-full">
+                    <div className="w-20 md:w-24 flex-shrink-0">
+                      <div className="w-full h-full bg-flap-shadow" />
+                    </div>
+                    <div className="flex-1 p-4 min-w-0 space-y-3">
+                      <div className="h-5 bg-flap-shadow rounded-none w-1/4" />
+                      <div className="h-4 bg-flap-shadow rounded-none w-1/2" />
+                      <div className="flex gap-2">
+                        <div className="h-6 bg-flap-shadow rounded-none w-24" />
+                        <div className="h-6 bg-flap-shadow rounded-none w-28" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

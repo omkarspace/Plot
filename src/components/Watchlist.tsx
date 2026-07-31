@@ -105,11 +105,12 @@ export default function Watchlist({ items, onRemove }: WatchlistProps) {
           <span></span>
         </div>
 
-        {displayed.map((item, index) => (
-          <div
-            key={item.id}
-            className={`departure-row group ${index % 2 === 1 ? "bg-row-alt" : ""}`}
-          >
+{displayed.map((item, index) => (
+            <div
+              key={item.id}
+              className={`departure-row group ${index % 2 === 1 ? "bg-row-alt" : ""} row-slide-in`}
+              style={{ animationDelay: `${index * 30}ms` }}
+            >
             <span className="text-delay-amber font-[family-name:var(--font-mono)] text-xs font-medium">
               {formatRuntime(item.totalRuntimeMinutes)}
             </span>
